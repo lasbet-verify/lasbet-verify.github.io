@@ -103,6 +103,7 @@
       server_seed: qs.s || '',
       server_seed_hash: qs.h || '',
       nonce: parseInt(qs.n) || 0,
+      rows: parseInt(qs.r) || 16,
     },
     computed: {
       result_hash () {
@@ -111,12 +112,13 @@
       result_hash_list () {
         return String(this.result_hash).match(/.{2}/g);
       },
-      results () {
+     results () {
         let res = [];
         let hexArr = this.result_hash_list;
         for (let i=0, l=hexArr.length; i<l; i+=4) {
           let num = this.parseInt(hexArr[i])/Math.pow(256, 1) + this.parseInt(hexArr[i+1])/Math.pow(256,2) + this.parseInt(hexArr[i+2])/Math.pow(256,3) + this.parseInt(hexArr[i+3])/Math.pow(256,4)
           res.push(num);
+          if (res.length >= this.rows) break;
         }
         return res;
       }
