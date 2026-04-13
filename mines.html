@@ -1,318 +1,300 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Mines verify</title>
-    <link rel="stylesheet" href="./lib/main.css" />
-    <link rel="stylesheet" href="./lib/bootstrap.min.css" />
-    <script src="./lib/vue.min.js"></script>
-    <script src="./lib/crypto-js.js"></script>
-    <script src="./lib/tools.js"></script>
-    <script src="./lib/mines-verify.js"></script>
-  </head>
-  <body>
-    <div id="app" class="main">
-      <h1 class="text-center pb-5">Mines verify</h1>
-      <hr />
 
-      <form class="py-5">
-        <h2 class="text-center">Input</h2>
-        <div class="form-group">
-          <input
-            :value="server_seed"
-            @change="server_seed = $event.target.value"
-            class="form-control"
-            placeholder="Server Seed"
-          />
-        </div>
-        <div class="form-group">
-          <input
-            :value="client_seed"
-            @change="client_seed = $event.target.value"
-            class="form-control"
-            placeholder="Client Seed"
-          />
-        </div>
-        <div class="form-group">
-          <input
-            :value="nonce"
-            @change="nonce = $event.target.value"
-            class="form-control"
-            placeholder="Nonce"
-          />
-        </div>
-        <div class="form-group">
-          <input
-            :value="mines_count"
-            @change="mines_count = $event.target.value"
-            class="form-control"
-            placeholder="Mines Count"
-          />
-        </div>
-        <div class="form-group">
-          <input
-            :value="safe_hits"
-            @change="safe_hits = $event.target.value"
-            class="form-control"
-            placeholder="Safe Hits"
-          />
-        </div>
-      </form>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>Mines verify</title>
+  <link rel="stylesheet" href="./lib/main.css" />
+  <link rel="stylesheet" href="./lib/bootstrap.min.css" />
+  <script src="./lib/vue.min.js"></script>
+  <script src="./lib/crypto-js.js"></script>
+  <script src="./lib/tools.js"></script>
+  <script src="./lib/mines-verify.js"></script>
+</head>
 
-      <hr />
+<body>
+  <div id="app" class="main">
+    <h1 class="text-center pb-5">Mines verify</h1>
+    <hr />
 
-      <form class="py-5">
-        <h2 class="text-center pb-5">Output</h2>
-        <div class="form-group">
-          <label>sha256(server_seed)</label>
-          <input class="form-control" readonly :value="sha256ServerSeed" />
-        </div>
-        <div class="form-group">
-          <label>first_hmac_input(client_seed:nonce:0)</label>
-          <input class="form-control" readonly :value="firstStep ? firstStep.message : ''" />
-        </div>
-        <div class="form-group">
-          <label>hmac_sha256(server_seed, client_seed:nonce:0)</label>
-          <input class="form-control" readonly :value="firstStep ? firstStep.hash : ''" />
-        </div>
-        <div class="form-group">
-          <label>first_random = int(hash[0:8], 16) / 2^32</label>
-          <input class="form-control" readonly :value="firstRandomDisplay" />
-        </div>
-      </form>
+    <form class="py-5">
+      <h2 class="text-center">Input</h2>
+      <div class="form-group">
+        <input :value="server_seed" @change="server_seed = $event.target.value" class="form-control"
+          placeholder="Server Seed" />
+      </div>
+      <div class="form-group">
+        <input :value="client_seed" @change="client_seed = $event.target.value" class="form-control"
+          placeholder="Client Seed" />
+      </div>
+      <div class="form-group">
+        <input :value="nonce" @change="nonce = $event.target.value" class="form-control" placeholder="Nonce" />
+      </div>
+      <div class="form-group">
+        <input :value="mines_count" @change="mines_count = $event.target.value" class="form-control"
+          placeholder="Mines Count" />
+      </div>
+      <div class="form-group">
+        <input :value="safe_hits" @change="safe_hits = $event.target.value" class="form-control"
+          placeholder="Safe Hits" />
+      </div>
+    </form>
 
-      <hr />
+    <hr />
 
-      <form class="py-5">
-        <h2 class="text-center pb-5">Final Result</h2>
-        <div class="form-group">
+    <form class="py-5">
+      <h2 class="text-center pb-5">Output</h2>
+      <div class="form-group">
+        <label>sha256(server_seed)</label>
+        <input class="form-control" readonly :value="sha256ServerSeed" />
+      </div>
+      <div class="form-group">
+        <label>first_hmac_input(client_seed:nonce:0)</label>
+        <input class="form-control" readonly :value="firstStep ? firstStep.message : ''" />
+      </div>
+      <div class="form-group">
+        <label>hmac_sha256(server_seed, client_seed:nonce:0)</label>
+        <input class="form-control" readonly :value="firstStep ? firstStep.hash : ''" />
+      </div>
+      <div class="form-group">
+        <label>first_random = int(hash[0:8], 16) / 2^32</label>
+        <input class="form-control" readonly :value="firstRandomDisplay" />
+      </div>
+    </form>
+
+    <hr />
+
+    <form class="py-5">
+      <h2 class="text-center pb-5">Final Result</h2>
+      <!-- <div class="form-group">
           <label>tiles order (0-24)</label>
           <textarea class="form-control" rows="3" readonly :value="tileOrderZeroBasedText"></textarea>
-        </div>
-        <div class="form-group">
-          <label>tiles order (1-25 display only)</label>
-          <textarea class="form-control" rows="3" readonly :value="tileOrderOneBasedText"></textarea>
-        </div>
-        <div class="form-group">
-          <label>inferred mine tiles (first mines_count values)</label>
-          <input class="form-control" readonly :value="mineTilesText" />
-        </div>
-        <div class="form-group">
-          <label>multiplier (RTP {{ rtpPercentDisplay }})</label>
-          <input class="form-control" readonly :value="multiplierDisplay" />
-        </div>
-        <div class="form-group">
-          <small class="text-muted">{{ multiplierFormulaText }}</small>
-        </div>
-      </form>
+        </div> -->
+      <div class="form-group">
+        <label>tiles order (1-25 display only)</label>
+        <textarea class="form-control" rows="3" readonly :value="tileOrderOneBasedText"></textarea>
+      </div>
+      <div class="form-group">
+        <label>inferred mine tiles (first mines_count values)</label>
+        <input class="form-control" readonly :value="mineTilesText" />
+      </div>
+      <div class="form-group">
+        <label>multiplier (RTP {{ rtpPercentDisplay }})</label>
+        <input class="form-control" readonly :value="multiplierDisplay" />
+      </div>
+      <div class="form-group">
+        <small class="text-muted">{{ multiplierFormulaText }}</small>
+      </div>
+    </form>
 
-      <hr />
+    <hr />
 
-      <form class="py-5">
-        <h2 class="text-center pb-4">Shuffle Steps</h2>
-        <div class="form-group" style="overflow-x: auto;">
-          <table style="width: 1400px;" class="table table-sm table-bordered">
-            <thead>
-              <tr>
-                <th>counter</th>
-                <th>message</th>
-                <th>hash</th>
-                <th>hash[0:8]</th>
-                <th>number</th>
-                <th>random</th>
-                <th>i</th>
-                <th>j</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="step in shuffleSteps" :key="step.counter">
-                <td>{{ step.counter }}</td>
-                <td>{{ step.message }}</td>
-                <td>{{ step.hash }}</td>
-                <td>{{ step.numberHex }}</td>
-                <td>{{ step.number }}</td>
-                <td>{{ formatRandom(step.random) }}</td>
-                <td>{{ step.currentIndex }}</td>
-                <td>{{ step.swapIndex }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </form>
-    </div>
-  </body>
-  <script>
-    let qs = tools.queryString();
+    <form class="py-5">
+      <h2 class="text-center pb-4">Shuffle Steps</h2>
+      <div class="form-group" style="overflow-x: auto;">
+        <table style="width: 1400px;" class="table table-sm table-bordered">
+          <thead>
+            <tr>
+              <th>counter</th>
+              <th>message</th>
+              <th>hash</th>
+              <th>hash[0:8]</th>
+              <th>number</th>
+              <th>random</th>
+              <th>i</th>
+              <th>j</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="step in shuffleSteps" :key="step.counter">
+              <td>{{ step.counter }}</td>
+              <td>{{ step.message }}</td>
+              <td>{{ step.hash }}</td>
+              <td>{{ step.numberHex }}</td>
+              <td>{{ step.number }}</td>
+              <td>{{ formatRandom(step.random) }}</td>
+              <td>{{ step.currentIndex }}</td>
+              <td>{{ step.swapIndex }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+</body>
+<script>
+  let qs = tools.queryString();
 
-    var app = new Vue({
-      el: "#app",
-      data: {
-        client_seed: qs.c || "",
-        server_seed: qs.s || "",
-        nonce: qs.n || "0",
-        mines_count: qs.m || "3",
-        safe_hits: qs.hits || "0",
-        rtp: MinesVerifier.DEFAULT_RTP,
+  var app = new Vue({
+    el: "#app",
+    data: {
+      client_seed: qs.c || "",
+      server_seed: qs.s || "",
+      nonce: qs.n || "0",
+      mines_count: qs.m || "3",
+      safe_hits: qs.hits || "0",
+      rtp: MinesVerifier.DEFAULT_RTP,
+    },
+    computed: {
+      shuffle() {
+        return MinesVerifier.generateShuffle(
+          this.server_seed,
+          this.client_seed,
+          this.nonce
+        );
       },
-      computed: {
-        shuffle() {
-          return MinesVerifier.generateShuffle(
-            this.server_seed,
-            this.client_seed,
-            this.nonce
-          );
-        },
 
-        shuffleSteps() {
-          return this.shuffle.steps;
-        },
-
-        firstStep() {
-          return this.shuffleSteps[0] || null;
-        },
-
-        sha256ServerSeed() {
-          return MinesVerifier.sha256Hex(this.server_seed);
-        },
-
-        tileOrderZeroBased() {
-          return this.shuffle.tiles;
-        },
-
-        tileOrderZeroBasedText() {
-          return this.tileOrderZeroBased.join(", ");
-        },
-
-        tileOrderOneBasedText() {
-          return this.tileOrderZeroBased
-            .map(function (tile) {
-              return tile + 1;
-            })
-            .join(", ");
-        },
-
-        numericMinesCount() {
-          return this.parseInteger(this.mines_count);
-        },
-
-        numericSafeHits() {
-          return this.parseInteger(this.safe_hits);
-        },
-
-        isValidMinesCount() {
-          return (
-            Number.isInteger(this.numericMinesCount) &&
-            this.numericMinesCount >= 1 &&
-            this.numericMinesCount < MinesVerifier.TOTAL_TILES
-          );
-        },
-
-        isValidSafeHits() {
-          return (
-            Number.isInteger(this.numericSafeHits) &&
-            this.numericSafeHits >= 0 &&
-            this.isValidMinesCount &&
-            this.numericSafeHits <= MinesVerifier.TOTAL_TILES - this.numericMinesCount
-          );
-        },
-
-        inferredMineTiles() {
-          if (!this.isValidMinesCount) return [];
-          return this.tileOrderZeroBased.slice(0, this.numericMinesCount);
-        },
-
-        mineTilesText() {
-          if (!this.isValidMinesCount) {
-            return "Enter a mines count between 1 and 24";
-          }
-
-          return this.inferredMineTiles.join(", ");
-        },
-
-        fairMultiplier() {
-          if (!this.isValidSafeHits) return null;
-
-          return (
-            MinesVerifier.combination(MinesVerifier.TOTAL_TILES, this.numericSafeHits) /
-            MinesVerifier.combination(
-              MinesVerifier.TOTAL_TILES - this.numericMinesCount,
-              this.numericSafeHits
-            )
-          );
-        },
-
-        multiplier() {
-          return MinesVerifier.calcMultiplier(
-            this.numericSafeHits,
-            this.numericMinesCount,
-            this.rtp
-          );
-        },
-
-        multiplierDisplay() {
-          if (this.multiplier == null) {
-            return "Enter valid safe hits and mines count";
-          }
-
-          return this.multiplier.toFixed(8);
-        },
-
-        multiplierFormulaText() {
-          if (!this.isValidMinesCount) {
-            return "Multiplier formula: combination(25, safeHits) / combination(25 - minesCount, safeHits) * 0.97";
-          }
-
-          if (!this.isValidSafeHits) {
-            return "safeHits must be between 0 and " + (MinesVerifier.TOTAL_TILES - this.numericMinesCount);
-          }
-
-          return (
-            "fair=" +
-            this.fairMultiplier.toFixed(8) +
-            ", final=" +
-            this.multiplier.toFixed(8) +
-            " using combination(25, " +
-            this.numericSafeHits +
-            ") / combination(" +
-            (MinesVerifier.TOTAL_TILES - this.numericMinesCount) +
-            ", " +
-            this.numericSafeHits +
-            ") * " +
-            this.rtp
-          );
-        },
-
-        firstRandomDisplay() {
-          if (!this.firstStep) return "";
-          return this.formatRandom(this.firstStep.random);
-        },
-
-        rtpPercentDisplay() {
-          return (this.rtp * 100).toFixed(0) + "%";
-        },
+      shuffleSteps() {
+        return this.shuffle.steps;
       },
-      watch: {
-        tileOrderZeroBased() {
-          if (typeof ga !== "function") return;
 
-          ga("send", "event", "Mines", "verify", this.server_seed, {
-            metric0: this.client_seed,
-            metric1: this.nonce,
-          });
-        },
+      firstStep() {
+        return this.shuffleSteps[0] || null;
       },
-      methods: {
-        parseInteger(value) {
-          const parsed = Number.parseInt(value, 10);
-          return Number.isFinite(parsed) ? parsed : null;
-        },
 
-        formatRandom(value) {
-          return Number(value).toFixed(12);
-        },
+      sha256ServerSeed() {
+        return MinesVerifier.sha256Hex(this.server_seed);
       },
-    });
-  </script>
+
+      tileOrderZeroBased() {
+        return this.shuffle.tiles;
+      },
+
+      tileOrderZeroBasedText() {
+        return this.tileOrderZeroBased.join(", ");
+      },
+
+      tileOrderOneBasedText() {
+        return this.tileOrderZeroBased
+          .map(function (tile) {
+            return tile + 1;
+          })
+          .join(", ");
+      },
+
+      numericMinesCount() {
+        return this.parseInteger(this.mines_count);
+      },
+
+      numericSafeHits() {
+        return this.parseInteger(this.safe_hits);
+      },
+
+      isValidMinesCount() {
+        return (
+          Number.isInteger(this.numericMinesCount) &&
+          this.numericMinesCount >= 1 &&
+          this.numericMinesCount < MinesVerifier.TOTAL_TILES
+        );
+      },
+
+      isValidSafeHits() {
+        return (
+          Number.isInteger(this.numericSafeHits) &&
+          this.numericSafeHits >= 0 &&
+          this.isValidMinesCount &&
+          this.numericSafeHits <= MinesVerifier.TOTAL_TILES - this.numericMinesCount
+        );
+      },
+
+      inferredMineTiles() {
+        if (!this.isValidMinesCount) return [];
+        return this.tileOrderZeroBased.slice(0, this.numericMinesCount);
+      },
+
+      mineTilesText() {
+        if (!this.isValidMinesCount) {
+          return "Enter a mines count between 1 and 24";
+        }
+
+        return this.inferredMineTiles.join(", ");
+      },
+
+      fairMultiplier() {
+        if (!this.isValidSafeHits) return null;
+
+        return (
+          MinesVerifier.combination(MinesVerifier.TOTAL_TILES, this.numericSafeHits) /
+          MinesVerifier.combination(
+            MinesVerifier.TOTAL_TILES - this.numericMinesCount,
+            this.numericSafeHits
+          )
+        );
+      },
+
+      multiplier() {
+        return MinesVerifier.calcMultiplier(
+          this.numericSafeHits,
+          this.numericMinesCount,
+          this.rtp
+        );
+      },
+
+      multiplierDisplay() {
+        if (this.multiplier == null) {
+          return "Enter valid safe hits and mines count";
+        }
+
+        return this.multiplier.toFixed(8);
+      },
+
+      multiplierFormulaText() {
+        if (!this.isValidMinesCount) {
+          return "Multiplier formula: combination(25, safeHits) / combination(25 - minesCount, safeHits) * 0.97";
+        }
+
+        if (!this.isValidSafeHits) {
+          return "safeHits must be between 0 and " + (MinesVerifier.TOTAL_TILES - this.numericMinesCount);
+        }
+
+        return (
+          "fair=" +
+          this.fairMultiplier.toFixed(8) +
+          ", final=" +
+          this.multiplier.toFixed(8) +
+          " using combination(25, " +
+          this.numericSafeHits +
+          ") / combination(" +
+          (MinesVerifier.TOTAL_TILES - this.numericMinesCount) +
+          ", " +
+          this.numericSafeHits +
+          ") * " +
+          this.rtp
+        );
+      },
+
+      firstRandomDisplay() {
+        if (!this.firstStep) return "";
+        return this.formatRandom(this.firstStep.random);
+      },
+
+      rtpPercentDisplay() {
+        return (this.rtp * 100).toFixed(0) + "%";
+      },
+    },
+    watch: {
+      tileOrderZeroBased() {
+        if (typeof ga !== "function") return;
+
+        ga("send", "event", "Mines", "verify", this.server_seed, {
+          metric0: this.client_seed,
+          metric1: this.nonce,
+        });
+      },
+    },
+    methods: {
+      parseInteger(value) {
+        const parsed = Number.parseInt(value, 10);
+        return Number.isFinite(parsed) ? parsed : null;
+      },
+
+      formatRandom(value) {
+        return Number(value).toFixed(12);
+      },
+    },
+  });
+</script>
+
 </html>
