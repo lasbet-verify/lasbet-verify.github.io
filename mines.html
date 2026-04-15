@@ -1,300 +1,1243 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Lasbet Mines Verifier</title>
+    <script src="./lib/vue.min.js"></script>
+    <script src="./lib/crypto-js.js"></script>
+    <script src="./lib/tools.js"></script>
+    <script src="./lib/mines-verify.js"></script>
+    <style>
+      :root {
+        --bg: #f3efe6;
+        --bg-accent: #efe1cb;
+        --surface: rgba(255, 252, 247, 0.88);
+        --surface-strong: #fffaf1;
+        --border: rgba(61, 46, 26, 0.12);
+        --text: #24190d;
+        --muted: #6e5a44;
+        --accent: #b44f28;
+        --accent-dark: #7a2e16;
+        --shadow: 0 24px 70px rgba(78, 49, 18, 0.12);
+        --radius-lg: 26px;
+        --radius-md: 18px;
+        --font-display: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+        --mine-bg: rgba(168, 41, 41, 0.12);
+        --mine-border: rgba(168, 41, 41, 0.18);
+        --mine-text: #8c2020;
+        --safe-bg: rgba(33, 120, 78, 0.12);
+        --safe-border: rgba(33, 120, 78, 0.18);
+        --safe-text: #145736;
+      }
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-  <title>Mines verify</title>
-  <link rel="stylesheet" href="./lib/main.css" />
-  <link rel="stylesheet" href="./lib/bootstrap.min.css" />
-  <script src="./lib/vue.min.js"></script>
-  <script src="./lib/crypto-js.js"></script>
-  <script src="./lib/tools.js"></script>
-  <script src="./lib/mines-verify.js"></script>
-</head>
+      * {
+        box-sizing: border-box;
+      }
 
-<body>
-  <div id="app" class="main">
-    <h1 class="text-center pb-5">Mines verify</h1>
-    <hr />
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
 
-    <form class="py-5">
-      <h2 class="text-center">Input</h2>
-      <div class="form-group">
-        <input :value="server_seed" @change="server_seed = $event.target.value" class="form-control"
-          placeholder="Server Seed" />
-      </div>
-      <div class="form-group">
-        <input :value="client_seed" @change="client_seed = $event.target.value" class="form-control"
-          placeholder="Client Seed" />
-      </div>
-      <div class="form-group">
-        <input :value="nonce" @change="nonce = $event.target.value" class="form-control" placeholder="Nonce" />
-      </div>
-      <div class="form-group">
-        <input :value="mines_count" @change="mines_count = $event.target.value" class="form-control"
-          placeholder="Mines Count" />
-      </div>
-      <div class="form-group">
-        <input :value="safe_hits" @change="safe_hits = $event.target.value" class="form-control"
-          placeholder="Safe Hits" />
-      </div>
-    </form>
+      body {
+        font-family: var(--font-display);
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 28%),
+          radial-gradient(circle at right center, rgba(180, 79, 40, 0.12), transparent 22%),
+          linear-gradient(145deg, var(--bg) 0%, var(--bg-accent) 100%);
+      }
 
-    <hr />
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
 
-    <form class="py-5">
-      <h2 class="text-center pb-5">Output</h2>
-      <div class="form-group">
-        <label>sha256(server_seed)</label>
-        <input class="form-control" readonly :value="sha256ServerSeed" />
-      </div>
-      <div class="form-group">
-        <label>first_hmac_input(client_seed:nonce:0)</label>
-        <input class="form-control" readonly :value="firstStep ? firstStep.message : ''" />
-      </div>
-      <div class="form-group">
-        <label>hmac_sha256(server_seed, client_seed:nonce:0)</label>
-        <input class="form-control" readonly :value="firstStep ? firstStep.hash : ''" />
-      </div>
-      <div class="form-group">
-        <label>first_random = int(hash[0:8], 16) / 2^32</label>
-        <input class="form-control" readonly :value="firstRandomDisplay" />
-      </div>
-    </form>
+      button {
+        cursor: pointer;
+      }
 
-    <hr />
+      code {
+        font-family: "SFMono-Regular", "Menlo", monospace;
+      }
 
-    <form class="py-5">
-      <h2 class="text-center pb-5">Final Result</h2>
-      <!-- <div class="form-group">
-          <label>tiles order (0-24)</label>
-          <textarea class="form-control" rows="3" readonly :value="tileOrderZeroBasedText"></textarea>
-        </div> -->
-      <div class="form-group">
-        <label>tiles order (1-25 display only)</label>
-        <textarea class="form-control" rows="3" readonly :value="tileOrderOneBasedText"></textarea>
-      </div>
-      <div class="form-group">
-        <label>inferred mine tiles (first mines_count values)</label>
-        <input class="form-control" readonly :value="mineTilesText" />
-      </div>
-      <div class="form-group">
-        <label>multiplier (RTP {{ rtpPercentDisplay }})</label>
-        <input class="form-control" readonly :value="multiplierDisplay" />
-      </div>
-      <div class="form-group">
-        <small class="text-muted">{{ multiplierFormulaText }}</small>
-      </div>
-    </form>
+      .page-shell {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 32px 20px 56px;
+      }
 
-    <hr />
+      .surface {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
 
-    <form class="py-5">
-      <h2 class="text-center pb-4">Shuffle Steps</h2>
-      <div class="form-group" style="overflow-x: auto;">
-        <table style="width: 1400px;" class="table table-sm table-bordered">
-          <thead>
-            <tr>
-              <th>counter</th>
-              <th>message</th>
-              <th>hash</th>
-              <th>hash[0:8]</th>
-              <th>number</th>
-              <th>random</th>
-              <th>i</th>
-              <th>j</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="step in shuffleSteps" :key="step.counter">
-              <td>{{ step.counter }}</td>
-              <td>{{ step.message }}</td>
-              <td>{{ step.hash }}</td>
-              <td>{{ step.numberHex }}</td>
-              <td>{{ step.number }}</td>
-              <td>{{ formatRandom(step.random) }}</td>
-              <td>{{ step.currentIndex }}</td>
-              <td>{{ step.swapIndex }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </form>
-  </div>
-</body>
-<script>
-  let qs = tools.queryString();
+      .hero-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr);
+        gap: 24px;
+        padding: 28px;
+        margin-bottom: 24px;
+      }
 
-  var app = new Vue({
-    el: "#app",
-    data: {
-      client_seed: qs.c || "",
-      server_seed: qs.s || "",
-      nonce: qs.n || "0",
-      mines_count: qs.m || "3",
-      safe_hits: qs.hits || "0",
-      rtp: MinesVerifier.DEFAULT_RTP,
-    },
-    computed: {
-      shuffle() {
-        return MinesVerifier.generateShuffle(
-          this.server_seed,
-          this.client_seed,
-          this.nonce
-        );
-      },
+      .eyebrow,
+      .field span,
+      .result-label,
+      .formula-label,
+      .visual-label,
+      .steps-head span,
+      .detail-summary small,
+      .helper-text {
+        display: block;
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
 
-      shuffleSteps() {
-        return this.shuffle.steps;
-      },
+      .hero-copy h1,
+      .panel-head h2,
+      .steps-head h3 {
+        margin: 6px 0 0;
+      }
 
-      firstStep() {
-        return this.shuffleSteps[0] || null;
-      },
+      .hero-copy h1 {
+        font-size: clamp(2rem, 4vw, 3.4rem);
+        line-height: 1.04;
+      }
 
-      sha256ServerSeed() {
-        return MinesVerifier.sha256Hex(this.server_seed);
-      },
+      .hero-copy p,
+      .hero-note p,
+      .result-card p,
+      .meta-description,
+      .formula-note,
+      .visual-card p,
+      .helper-text,
+      .status-detail {
+        margin: 14px 0 0;
+        color: var(--muted);
+        line-height: 1.68;
+      }
 
-      tileOrderZeroBased() {
-        return this.shuffle.tiles;
-      },
+      .hero-note,
+      .visual-card,
+      .detail-log {
+        padding: 18px 20px;
+        border-radius: var(--radius-md);
+        background: linear-gradient(180deg, rgba(180, 79, 40, 0.1), rgba(255, 255, 255, 0.35));
+      }
 
-      tileOrderZeroBasedText() {
-        return this.tileOrderZeroBased.join(", ");
-      },
+      .hero-note strong,
+      .visual-card strong {
+        display: block;
+        margin-bottom: 10px;
+      }
 
-      tileOrderOneBasedText() {
-        return this.tileOrderZeroBased
-          .map(function (tile) {
-            return tile + 1;
-          })
-          .join(", ");
-      },
+      .content-grid {
+        display: grid;
+        grid-template-columns: minmax(320px, 430px) minmax(320px, 1fr);
+        gap: 24px;
+        align-items: start;
+      }
 
-      numericMinesCount() {
-        return this.parseInteger(this.mines_count);
-      },
+      .panel {
+        padding: 24px;
+      }
 
-      numericSafeHits() {
-        return this.parseInteger(this.safe_hits);
-      },
+      .panel-head,
+      .button-row,
+      .steps-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
 
-      isValidMinesCount() {
-        return (
-          Number.isInteger(this.numericMinesCount) &&
-          this.numericMinesCount >= 1 &&
-          this.numericMinesCount < MinesVerifier.TOTAL_TILES
-        );
-      },
+      .input-form {
+        display: grid;
+        gap: 18px;
+        margin-top: 20px;
+      }
 
-      isValidSafeHits() {
-        return (
-          Number.isInteger(this.numericSafeHits) &&
-          this.numericSafeHits >= 0 &&
-          this.isValidMinesCount &&
-          this.numericSafeHits <= MinesVerifier.TOTAL_TILES - this.numericMinesCount
-        );
-      },
+      .derived-form {
+        display: grid;
+        gap: 18px;
+      }
 
-      inferredMineTiles() {
-        if (!this.isValidMinesCount) return [];
-        return this.tileOrderZeroBased.slice(0, this.numericMinesCount);
-      },
+      .field {
+        display: grid;
+        gap: 10px;
+      }
 
-      mineTilesText() {
-        if (!this.isValidMinesCount) {
-          return "Enter a mines count between 1 and 24";
+      .field input,
+      .field textarea {
+        width: 100%;
+        border: 1px solid rgba(61, 46, 26, 0.14);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--text);
+        padding: 14px 16px;
+        resize: vertical;
+        outline: none;
+        transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+      }
+
+      .field input:focus,
+      .field textarea:focus {
+        border-color: rgba(180, 79, 40, 0.5);
+        box-shadow: 0 0 0 4px rgba(180, 79, 40, 0.1);
+        transform: translateY(-1px);
+      }
+
+      .button-row {
+        flex-wrap: wrap;
+      }
+
+      .primary-button,
+      .secondary-button,
+      .lang-button {
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 18px;
+        transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      }
+
+      .primary-button {
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+        color: #fff6ef;
+        box-shadow: 0 18px 28px rgba(122, 46, 22, 0.18);
+      }
+
+      .secondary-button {
+        background: rgba(61, 46, 26, 0.06);
+        color: var(--text);
+      }
+
+      .lang-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .lang-button {
+        background: rgba(61, 46, 26, 0.06);
+        color: var(--text);
+      }
+
+      .lang-button.is-active {
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+        color: #fff6ef;
+        box-shadow: 0 18px 28px rgba(122, 46, 22, 0.18);
+      }
+
+      .primary-button:hover,
+      .secondary-button:hover,
+      .lang-button:hover {
+        transform: translateY(-1px);
+      }
+
+      .result-panel {
+        display: grid;
+        gap: 18px;
+      }
+
+      .status-pill {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(61, 46, 26, 0.08);
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .status-pill[data-tone="success"] {
+        background: rgba(33, 120, 78, 0.14);
+        color: var(--safe-text);
+      }
+
+      .status-pill[data-tone="error"] {
+        background: rgba(168, 41, 41, 0.14);
+        color: var(--mine-text);
+      }
+
+      .result-card,
+      .steps-block,
+      .formula-box,
+      .detail-log {
+        border-radius: var(--radius-md);
+        background: var(--surface-strong);
+        border: 1px solid rgba(61, 46, 26, 0.08);
+      }
+
+      .result-card {
+        padding: 24px;
+      }
+
+      .result-card strong {
+        display: block;
+        margin-top: 12px;
+        font-size: clamp(1.7rem, 4vw, 2.8rem);
+        line-height: 1.18;
+        color: var(--accent-dark);
+        word-break: break-word;
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+      }
+
+      .meta-item {
+        padding: 18px;
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.62);
+        border: 1px solid rgba(61, 46, 26, 0.08);
+      }
+
+      .meta-item code,
+      .meta-item .meta-text {
+        display: block;
+        margin-top: 10px;
+        color: var(--text);
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+      }
+
+      .formula-box {
+        padding: 16px 18px;
+      }
+
+      .formula-box code {
+        display: block;
+        margin-top: 10px;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+      }
+
+      .visual-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .chip-row,
+      .path-row,
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .chip,
+      .path-step,
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: rgba(180, 79, 40, 0.1);
+        color: var(--text);
+        border: 1px solid rgba(180, 79, 40, 0.14);
+        font-weight: 600;
+      }
+
+      .chip.mine,
+      .grid-cell.mine {
+        background: var(--mine-bg);
+        border-color: var(--mine-border);
+        color: var(--mine-text);
+      }
+
+      .grid-board {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .grid-cell {
+        border-radius: 14px;
+        min-height: 56px;
+        display: grid;
+        place-items: center;
+        background: rgba(61, 46, 26, 0.06);
+        border: 1px solid rgba(61, 46, 26, 0.08);
+        font-weight: 700;
+      }
+
+      .steps-block {
+        padding: 22px;
+      }
+
+      .steps-list {
+        margin: 18px 0 0;
+        padding-left: 22px;
+        color: var(--muted);
+      }
+
+      .steps-list li {
+        margin-bottom: 14px;
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+      }
+
+      .detail-log {
+        padding: 18px;
+      }
+
+      .detail-summary {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .detail-summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .log-table-wrap {
+        overflow-x: auto;
+        margin-top: 16px;
+      }
+
+      .log-table {
+        width: 100%;
+        min-width: 920px;
+        border-collapse: collapse;
+      }
+
+      .log-table th,
+      .log-table td {
+        padding: 12px 10px;
+        border-bottom: 1px solid rgba(61, 46, 26, 0.08);
+        text-align: left;
+        vertical-align: top;
+        font-size: 0.92rem;
+      }
+
+      .log-table th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .mono {
+        font-family: "SFMono-Regular", "Menlo", monospace;
+        overflow-wrap: anywhere;
+      }
+
+      .error-list {
+        margin: 12px 0 0;
+        padding-left: 18px;
+        color: var(--mine-text);
+      }
+
+      @media (max-width: 920px) {
+        .hero-card,
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page-shell {
+          padding: 20px 14px 36px;
         }
 
-        return this.inferredMineTiles.join(", ");
-      },
-
-      fairMultiplier() {
-        if (!this.isValidSafeHits) return null;
-
-        return (
-          MinesVerifier.combination(MinesVerifier.TOTAL_TILES, this.numericSafeHits) /
-          MinesVerifier.combination(
-            MinesVerifier.TOTAL_TILES - this.numericMinesCount,
-            this.numericSafeHits
-          )
-        );
-      },
-
-      multiplier() {
-        return MinesVerifier.calcMultiplier(
-          this.numericSafeHits,
-          this.numericMinesCount,
-          this.rtp
-        );
-      },
-
-      multiplierDisplay() {
-        if (this.multiplier == null) {
-          return "Enter valid safe hits and mines count";
+        .hero-card,
+        .panel {
+          padding: 18px;
         }
 
-        return this.multiplier.toFixed(8);
-      },
-
-      multiplierFormulaText() {
-        if (!this.isValidMinesCount) {
-          return "Multiplier formula: combination(25, safeHits) / combination(25 - minesCount, safeHits) * 0.97";
+        .panel-head,
+        .button-row,
+        .steps-head,
+        .detail-summary {
+          align-items: start;
+          flex-direction: column;
         }
 
-        if (!this.isValidSafeHits) {
-          return "safeHits must be between 0 and " + (MinesVerifier.TOTAL_TILES - this.numericMinesCount);
+        .primary-button,
+        .secondary-button {
+          width: 100%;
         }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="app" class="page-shell">
+      <section class="hero-card surface">
+        <div class="hero-copy">
+          <span class="eyebrow">{{ t("eyebrow") }}</span>
+          <h1>{{ t("heroTitle") }}</h1>
+          <p>
+            {{ t("heroDescriptionStart") }}
+            <code>{{ t("serverSeedLabel") }}</code>, <code>{{ t("clientSeedLabel") }}</code>,
+            <code>{{ t("nonceLabel") }}</code>, <code>{{ t("mineCountLabel") }}</code>,
+            {{ t("heroDescriptionConnector") }}
+            <code>{{ t("safeHitsLabel") }}</code>.
+          </p>
+        </div>
+        <div class="hero-note">
+          <strong>{{ t("heroAsideTitle") }}</strong>
+          <p>
+            {{ t("heroAsideBodyStart") }}
+            <code>HMAC-SHA256 + Fisher-Yates</code> flow. It displays
+            <code>sha256(server_seed)</code>, {{ t("heroAsideBodyMiddle") }}
+            {{ t("heroAsideBodyEnd") }}
+          </p>
+          <div class="badge-row">
+            <span class="hero-badge">{{ t("cellsBadge") }}</span>
+            <span class="hero-badge">HMAC-SHA256</span>
+            <span class="hero-badge">Fisher-Yates</span>
+            <span class="hero-badge">RTP {{ rtpPercentDisplay }}</span>
+          </div>
+          <div class="lang-row">
+            <button
+              type="button"
+              class="lang-button"
+              :class="{ 'is-active': current_lang === 'en' }"
+              @click="setLanguage('en')"
+            >
+              English
+            </button>
+            <button
+              type="button"
+              class="lang-button"
+              :class="{ 'is-active': current_lang === 'es' }"
+              @click="setLanguage('es')"
+            >
+              Espanol
+            </button>
+          </div>
+        </div>
+      </section>
 
-        return (
-          "fair=" +
-          this.fairMultiplier.toFixed(8) +
-          ", final=" +
-          this.multiplier.toFixed(8) +
-          " using combination(25, " +
-          this.numericSafeHits +
-          ") / combination(" +
-          (MinesVerifier.TOTAL_TILES - this.numericMinesCount) +
-          ", " +
-          this.numericSafeHits +
-          ") * " +
-          this.rtp
-        );
-      },
+      <section class="content-grid">
+        <section class="surface panel">
+          <div class="panel-head">
+            <h2>{{ t("inputTitle") }}</h2>
+            <span class="status-pill" :data-tone="statusTone">{{ statusText }}</span>
+          </div>
 
-      firstRandomDisplay() {
-        if (!this.firstStep) return "";
-        return this.formatRandom(this.firstStep.random);
-      },
+          <div class="helper-text">
+            {{ t("inputHelperStart") }}
+            {{ t("inputHelperEnd") }}
+          </div>
 
-      rtpPercentDisplay() {
-        return (this.rtp * 100).toFixed(0) + "%";
-      },
-    },
-    watch: {
-      tileOrderZeroBased() {
-        if (typeof ga !== "function") return;
+          <div class="input-form">
+            <label class="field">
+              <span>{{ t("serverSeedLabel") }}</span>
+              <textarea v-model.trim="server_seed" rows="3" spellcheck="false" :placeholder="t('serverSeedLabel')"></textarea>
+            </label>
 
-        ga("send", "event", "Mines", "verify", this.server_seed, {
-          metric0: this.client_seed,
-          metric1: this.nonce,
-        });
-      },
-    },
-    methods: {
-      parseInteger(value) {
-        const parsed = Number.parseInt(value, 10);
-        return Number.isFinite(parsed) ? parsed : null;
-      },
+            <label class="field">
+              <span>{{ t("clientSeedLabel") }}</span>
+              <textarea v-model.trim="client_seed" rows="2" spellcheck="false" :placeholder="t('clientSeedLabel')"></textarea>
+            </label>
 
-      formatRandom(value) {
-        return Number(value).toFixed(12);
-      },
-    },
-  });
-</script>
+            <label class="field">
+              <span>{{ t("nonceLabel") }}</span>
+              <input v-model.trim="nonce" type="text" inputmode="numeric" :placeholder="t('nonceLabel')" />
+            </label>
 
+            <label class="field">
+              <span>{{ t("mineCountLabel") }}</span>
+              <input v-model.trim="mines_count" type="text" inputmode="numeric" placeholder="1 - 24" />
+            </label>
+
+            <label class="field">
+              <span>{{ t("safeHitsLabel") }}</span>
+              <input v-model.trim="safe_hits" type="text" inputmode="numeric" :placeholder="t('safeHitsPlaceholder')" />
+            </label>
+
+            <div class="button-row">
+              <button type="button" class="primary-button" @click="loadExample">
+                {{ t("loadExampleButton") }}
+              </button>
+              <button type="button" class="secondary-button" @click="copyVerificationSummary">
+                {{ copyButtonText }}
+              </button>
+            </div>
+          </div>
+
+          <ul class="error-list" v-if="!isIdle && inputErrors.length">
+            <li v-for="error in inputErrors" :key="error">{{ error }}</li>
+          </ul>
+        </section>
+
+        <section class="surface panel result-panel">
+          <div class="panel-head">
+            <h2>{{ t("resultTitle") }}</h2>
+            <span class="status-pill" :data-tone="statusTone">{{ statusText }}</span>
+          </div>
+
+          <div class="result-card">
+            <span class="result-label">{{ t("resultLabel") }}</span>
+            <strong>{{ resultPrimary }}</strong>
+            <p>{{ resultSummary }}</p>
+          </div>
+
+          <div class="meta-grid">
+            <article class="meta-item" v-for="item in metaCards" :key="item.label">
+              <span class="result-label">{{ item.label }}</span>
+              <code v-if="item.code">{{ item.value }}</code>
+              <span v-else class="meta-text">{{ item.value }}</span>
+              <p v-if="item.description" class="meta-description">{{ item.description }}</p>
+            </article>
+          </div>
+
+          <div class="visual-grid">
+            <article class="visual-card">
+              <span class="visual-label">{{ t("boardLabel") }}</span>
+              <strong>{{ t("boardTitle") }}</strong>
+              <p>{{ t("boardDescription") }}</p>
+              <div class="grid-board">
+                <div
+                  v-for="cell in boardCells"
+                  :key="cell.display"
+                  class="grid-cell"
+                  :class="cell.tone"
+                >
+                  {{ cell.display }}
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      let qs = tools.queryString();
+      const LANGUAGE_KEY = "lasbet-mines-lang";
+      const SUPPORTED_LANGS = ["en", "es"];
+      let storedLang = "en";
+
+      try {
+        const candidate = window.localStorage.getItem(LANGUAGE_KEY);
+        if (SUPPORTED_LANGS.indexOf(candidate) !== -1) {
+          storedLang = candidate;
+        }
+      } catch (error) {}
+
+      const initialLang = SUPPORTED_LANGS.indexOf(qs.lang) !== -1 ? qs.lang : storedLang;
+
+      const TRANSLATIONS = {
+        en: {
+          pageTitle: "Lasbet Provably Fair Mines Verifier",
+          eyebrow: "Provably Fair",
+          heroTitle: "Lasbet Mines Verifier",
+          heroDescriptionStart: "This page keeps the current Mines verification algorithm and focuses on the exact parameters needed to reproduce one round:",
+          heroDescriptionConnector: "and",
+          heroAsideTitle: "Verification Logic",
+          heroAsideBodyStart: "The page still uses the repo's existing",
+          heroAsideBodyMiddle: "the first HMAC input, the first HMAC output,",
+          heroAsideBodyEnd: "the first random value, and the final mine layout on the board.",
+          cellsBadge: "25 Cells",
+          inputTitle: "Input Parameters",
+          inputHelperStart: "Results update live.",
+          inputHelperEnd: "The algorithm only needs five inputs.",
+          serverSeedLabel: "Server Seed",
+          clientSeedLabel: "Client Seed",
+          nonceLabel: "Nonce",
+          mineCountLabel: "Mine Count",
+          safeHitsLabel: "Safe Hits",
+          safeHitsPlaceholder: "Used for multiplier",
+          loadExampleButton: "Load Example",
+          copyButton: "Copy Verification Summary",
+          copyCopied: "Copied",
+          copyFailed: "Copy failed",
+          copyUnavailable: "Clipboard API unavailable",
+          resultTitle: "Verification Result",
+          resultLabel: "Mine Distribution",
+          boardLabel: "Board Result",
+          boardTitle: "5x5 Mine Layout",
+          boardDescription: "Red cells are inferred mine positions. Unmarked cells are non-mine positions in the final board layout.",
+          statusIdle: "Waiting for input",
+          statusError: "Invalid input",
+          statusSuccess: "Verification complete",
+          invalidInputTitle: "Invalid Input",
+          errorServerSeedEmpty: "Server Seed cannot be empty.",
+          errorClientSeedEmpty: "Client Seed cannot be empty.",
+          errorNonceInvalid: "Nonce must be an integer greater than or equal to 0.",
+          errorMineCountInvalid: "Mine Count must stay between 1 and 24.",
+          errorSafeHitsInvalid: function (params) {
+            return "Safe Hits must stay between 0 and " + params.max + ".";
+          },
+          resultIdle: "Enter the base parameters to rebuild the 5x5 board and verify the mine layout.",
+          resultInvalid: "The current inputs are not valid enough to complete verification yet.",
+          resultReady: function (params) {
+            return (
+              "Mine positions have been derived from the shuffle result. The first " +
+              params.mineCount +
+              " positions are treated as mines, and the multiplier is calculated with safe hits = " +
+              params.safeHits +
+              " giving " +
+              params.multiplier +
+              "."
+            );
+          },
+          outputShaLabel: "SHA256(Server Seed)",
+          outputFirstInputLabel: "First HMAC Input",
+          outputFirstHmacLabel: "First HMAC",
+          outputFirstRandomLabel: "First Random",
+          outputFirstRandomDescription: "Derived from hash[0:8], converted to decimal, then divided by 2^32",
+          copyTitle: "Lasbet Mines Verification",
+          copyServerSeed: "server_seed",
+          copyClientSeed: "client_seed",
+          copyServerSeedHash: "server_seed_hash",
+          copyNonce: "nonce",
+          copyMineCount: "mine_count",
+          copySafeHits: "safe_hits",
+          copySha: "sha256(server_seed)",
+          copyFirstInput: "first_hmac_input",
+          copyFirstHmac: "first_hmac",
+          copyFirstRandom: "first_random",
+          copyTileOrder: "tile_order_1_25",
+          copyMinePositions: "mine_positions",
+          copyMultiplier: "multiplier",
+        },
+        es: {
+          pageTitle: "Verificador Mines Provably Fair de Lasbet",
+          eyebrow: "Provably Fair",
+          heroTitle: "Verificador Mines de Lasbet",
+          heroDescriptionStart: "Esta pagina mantiene el algoritmo actual de verificacion de Mines y se centra en los parametros exactos necesarios para reproducir una ronda:",
+          heroDescriptionConnector: "y",
+          heroAsideTitle: "Logica de Verificacion",
+          heroAsideBodyStart: "La pagina sigue usando el flujo existente del repositorio",
+          heroAsideBodyMiddle: "la primera entrada HMAC, la primera salida HMAC,",
+          heroAsideBodyEnd: "el primer valor aleatorio y la distribucion final de minas en el tablero.",
+          cellsBadge: "25 Celdas",
+          inputTitle: "Parametros de Entrada",
+          inputHelperStart: "Los resultados se actualizan en tiempo real.",
+          inputHelperEnd: "El algoritmo solo necesita cinco entradas.",
+          serverSeedLabel: "Server Seed",
+          clientSeedLabel: "Client Seed",
+          nonceLabel: "Nonce",
+          mineCountLabel: "Cantidad de Minas",
+          safeHitsLabel: "Aciertos Seguros",
+          safeHitsPlaceholder: "Usado para el multiplicador",
+          loadExampleButton: "Cargar Ejemplo",
+          copyButton: "Copiar Resumen de Verificacion",
+          copyCopied: "Copiado",
+          copyFailed: "Error al copiar",
+          copyUnavailable: "La API del portapapeles no esta disponible",
+          resultTitle: "Resultado de Verificacion",
+          resultLabel: "Distribucion de Minas",
+          boardLabel: "Resultado del Tablero",
+          boardTitle: "Distribucion 5x5 de Minas",
+          boardDescription: "Las celdas rojas son posiciones de minas inferidas. Las celdas sin marcar son posiciones sin mina en el tablero final.",
+          statusIdle: "Esperando datos",
+          statusError: "Entrada invalida",
+          statusSuccess: "Verificacion completada",
+          invalidInputTitle: "Entrada Invalida",
+          errorServerSeedEmpty: "Server Seed no puede estar vacio.",
+          errorClientSeedEmpty: "Client Seed no puede estar vacio.",
+          errorNonceInvalid: "Nonce debe ser un entero mayor o igual que 0.",
+          errorMineCountInvalid: "La cantidad de minas debe estar entre 1 y 24.",
+          errorSafeHitsInvalid: function (params) {
+            return "Aciertos Seguros debe estar entre 0 y " + params.max + ".";
+          },
+          resultIdle: "Introduce los parametros base para reconstruir el tablero 5x5 y verificar la distribucion de minas.",
+          resultInvalid: "Las entradas actuales no son validas para completar la verificacion.",
+          resultReady: function (params) {
+            return (
+              "Las posiciones de minas se derivaron del resultado de la mezcla. Las primeras " +
+              params.mineCount +
+              " posiciones se tratan como minas, y el multiplicador se calcula con aciertos seguros = " +
+              params.safeHits +
+              ", dando " +
+              params.multiplier +
+              "."
+            );
+          },
+          outputShaLabel: "SHA256(Server Seed)",
+          outputFirstInputLabel: "Primera Entrada HMAC",
+          outputFirstHmacLabel: "Primer HMAC",
+          outputFirstRandomLabel: "Primer Valor Aleatorio",
+          outputFirstRandomDescription: "Se obtiene de hash[0:8], convertido a decimal y dividido entre 2^32",
+          copyTitle: "Verificacion Mines de Lasbet",
+          copyServerSeed: "server_seed",
+          copyClientSeed: "client_seed",
+          copyServerSeedHash: "server_seed_hash",
+          copyNonce: "nonce",
+          copyMineCount: "mine_count",
+          copySafeHits: "safe_hits",
+          copySha: "sha256(server_seed)",
+          copyFirstInput: "first_hmac_input",
+          copyFirstHmac: "first_hmac",
+          copyFirstRandom: "first_random",
+          copyTileOrder: "tile_order_1_25",
+          copyMinePositions: "mine_positions",
+          copyMultiplier: "multiplier",
+        },
+      };
+
+      var app = new Vue({
+        el: "#app",
+        data: {
+          current_lang: initialLang,
+          server_seed: qs.s || "",
+          client_seed: qs.c || "",
+          server_seed_hash: qs.h || "",
+          nonce: qs.n || "0",
+          mines_count: qs.m || "3",
+          safe_hits: qs.hits || "0",
+          rtp: MinesVerifier.DEFAULT_RTP,
+          copyFeedback: "",
+          demoValues: {
+            server_seed: "server",
+            client_seed: "client",
+            nonce: "1",
+            mines_count: "5",
+            safe_hits: "3",
+          },
+        },
+        computed: {
+          isIdle() {
+            return !this.server_seed.trim() && !this.client_seed.trim();
+          },
+
+          numericNonce() {
+            return this.parseInteger(this.nonce);
+          },
+
+          numericMinesCount() {
+            return this.parseInteger(this.mines_count);
+          },
+
+          numericSafeHits() {
+            return this.parseInteger(this.safe_hits);
+          },
+
+          isValidNonce() {
+            return Number.isInteger(this.numericNonce) && this.numericNonce >= 0;
+          },
+
+          isValidMinesCount() {
+            return (
+              Number.isInteger(this.numericMinesCount) &&
+              this.numericMinesCount >= 1 &&
+              this.numericMinesCount < MinesVerifier.TOTAL_TILES
+            );
+          },
+
+          isValidSafeHits() {
+            return (
+              Number.isInteger(this.numericSafeHits) &&
+              this.numericSafeHits >= 0 &&
+              this.isValidMinesCount &&
+              this.numericSafeHits <= MinesVerifier.TOTAL_TILES - this.numericMinesCount
+            );
+          },
+
+          inputErrors() {
+            if (this.isIdle) return [];
+
+            const errors = [];
+
+            if (!this.server_seed.trim()) {
+              errors.push(this.t("errorServerSeedEmpty"));
+            }
+
+            if (!this.client_seed.trim()) {
+              errors.push(this.t("errorClientSeedEmpty"));
+            }
+
+            if (!this.isValidNonce) {
+              errors.push(this.t("errorNonceInvalid"));
+            }
+
+            if (!this.isValidMinesCount) {
+              errors.push(this.t("errorMineCountInvalid"));
+            }
+
+            if (!this.isValidSafeHits) {
+              const maxSafeHits = this.isValidMinesCount
+                ? MinesVerifier.TOTAL_TILES - this.numericMinesCount
+                : 24;
+              errors.push(this.t("errorSafeHitsInvalid", { max: maxSafeHits }));
+            }
+
+            return errors;
+          },
+
+          canRenderResult() {
+            return !this.isIdle && this.inputErrors.length === 0;
+          },
+
+          shuffle() {
+            if (!this.canRenderResult) {
+              return {
+                tiles: Array.from({ length: MinesVerifier.TOTAL_TILES }, function (_, index) {
+                  return index;
+                }),
+                steps: [],
+              };
+            }
+
+            return MinesVerifier.generateShuffle(
+              this.server_seed,
+              this.client_seed,
+              this.numericNonce
+            );
+          },
+
+          shuffleSteps() {
+            return this.shuffle.steps;
+          },
+
+          firstStep() {
+            return this.shuffleSteps[0] || null;
+          },
+
+          sha256ServerSeed() {
+            if (!this.canRenderResult) return "--";
+            return MinesVerifier.sha256Hex(this.server_seed);
+          },
+
+          tileOrderZeroBased() {
+            return this.shuffle.tiles;
+          },
+
+          tileOrderOneBased() {
+            return this.tileOrderZeroBased.map(function (tile) {
+              return tile + 1;
+            });
+          },
+
+          tileOrderOneBasedText() {
+            if (!this.canRenderResult) return "--";
+            return this.tileOrderOneBased.join(", ");
+          },
+
+          inferredMineTiles() {
+            if (!this.canRenderResult) return [];
+            return this.tileOrderZeroBased.slice(0, this.numericMinesCount);
+          },
+
+          minePositionsOneBased() {
+            return this.inferredMineTiles.map(function (tile) {
+              return tile + 1;
+            });
+          },
+
+          minePositionsText() {
+            if (!this.canRenderResult) return "--";
+            return this.minePositionsOneBased.join(", ");
+          },
+
+          fairMultiplier() {
+            if (!this.canRenderResult) return null;
+            return (
+              MinesVerifier.combination(MinesVerifier.TOTAL_TILES, this.numericSafeHits) /
+              MinesVerifier.combination(
+                MinesVerifier.TOTAL_TILES - this.numericMinesCount,
+                this.numericSafeHits
+              )
+            );
+          },
+
+          multiplier() {
+            if (!this.canRenderResult) return null;
+            return MinesVerifier.calcMultiplier(
+              this.numericSafeHits,
+              this.numericMinesCount,
+              this.rtp
+            );
+          },
+
+          multiplierDisplay() {
+            if (this.multiplier == null) return "--";
+            return this.multiplier.toFixed(8);
+          },
+
+          firstRandomDisplay() {
+            if (!this.firstStep) return "--";
+            return this.formatRandom(this.firstStep.random);
+          },
+
+          resultPrimary() {
+            if (this.isIdle) return "--";
+            if (!this.canRenderResult) return this.t("invalidInputTitle");
+            return this.minePositionsText;
+          },
+
+          resultSummary() {
+            if (this.isIdle) {
+              return this.t("resultIdle");
+            }
+
+            if (!this.canRenderResult) {
+              return this.t("resultInvalid");
+            }
+
+            return this.t("resultReady", {
+              mineCount: this.numericMinesCount,
+              safeHits: this.numericSafeHits,
+              multiplier: this.multiplierDisplay,
+            });
+          },
+
+          statusTone() {
+            if (this.isIdle) return "idle";
+            if (this.inputErrors.length) return "error";
+            return "success";
+          },
+
+          statusText() {
+            if (this.isIdle) return this.t("statusIdle");
+            if (this.inputErrors.length) return this.t("statusError");
+            return this.t("statusSuccess");
+          },
+
+          formulaLines() {
+            return [
+              "message_i = client_seed : nonce : counter",
+              "hash_i = HMAC_SHA256(server_seed, message_i)",
+              "r_i = int(hash_i[0:8], 16) / 2^32",
+              "j_i = floor(r_i * (i + 1))",
+              "take first mine_count cells after shuffle as mines",
+              "multiplier = C(25, safe_hits) / C(25 - mine_count, safe_hits) * " + this.rtp,
+            ];
+          },
+
+          formulaNote() {
+            if (!this.canRenderResult) {
+              return "These are the exact calculation steps used by the current page. The layout changed, but the algorithm did not.";
+            }
+
+            return (
+              "First message: " +
+              this.firstStep.message +
+              ". First random value r = " +
+              this.firstRandomDisplay +
+              ". Final tile order is [" +
+              this.tileOrderOneBasedText +
+              "]."
+            );
+          },
+
+          metaCards() {
+            if (!this.canRenderResult) {
+              return [
+                { label: this.t("outputShaLabel"), value: "--", code: true },
+                { label: this.t("outputFirstInputLabel"), value: "--", code: true },
+                { label: this.t("outputFirstHmacLabel"), value: "--", code: true },
+                { label: this.t("outputFirstRandomLabel"), value: "--", code: false },
+              ];
+            }
+
+            return [
+              {
+                label: this.t("outputShaLabel"),
+                value: this.sha256ServerSeed,
+                code: true,
+              },
+              {
+                label: this.t("outputFirstInputLabel"),
+                value: this.firstStep.message,
+                code: true,
+              },
+              {
+                label: this.t("outputFirstHmacLabel"),
+                value: this.firstStep.hash,
+                code: true,
+              },
+              {
+                label: this.t("outputFirstRandomLabel"),
+                value: this.firstRandomDisplay,
+                code: false,
+                description: this.t("outputFirstRandomDescription"),
+              },
+            ];
+          },
+
+          boardCells() {
+            const mines = new Set(this.inferredMineTiles);
+
+            return Array.from({ length: MinesVerifier.TOTAL_TILES }, function (_, index) {
+              const isMine = mines.has(index);
+              return {
+                display: index + 1,
+                tone: isMine ? "mine" : "",
+              };
+            });
+          },
+
+          shufflePreview() {
+            return this.shuffleSteps.slice(0, 8).map(function (step) {
+              return {
+                counter: step.counter,
+                current: step.currentIndex + 1,
+                swap: step.swapIndex + 1,
+              };
+            });
+          },
+
+          verificationSteps() {
+            if (this.isIdle) {
+              return [
+                "Start by entering server seed, client seed, nonce, and mine count.",
+                "The page uses HMAC_SHA256(server_seed, client_seed:nonce:counter) to derive the random value for each shuffle round.",
+                "After the shuffle, the first mine_count cells are treated as mines, and the multiplier is computed from safe hits.",
+              ];
+            }
+
+            if (this.inputErrors.length) {
+              return this.inputErrors.slice();
+            }
+
+            const steps = [
+              "The first message string is " + this.firstStep.message + ".",
+              "The first HMAC result is " + this.firstStep.hash + ".",
+              "Taking the first 8 hex characters " + this.firstStep.numberHex + " gives random value r = " + this.firstRandomDisplay + ".",
+              "Each r value drives a Fisher-Yates shuffle over cells 1-25, producing the final order " + this.tileOrderOneBasedText + ".",
+              "Under the current page rule, the first " + this.numericMinesCount + " positions are treated as mines: " + this.minePositionsText + ".",
+              "The multiplier uses C(25, " +
+                this.numericSafeHits +
+                ") / C(" +
+                (MinesVerifier.TOTAL_TILES - this.numericMinesCount) +
+                ", " +
+                this.numericSafeHits +
+                ") * " +
+                this.rtp +
+                ", resulting in " +
+                this.multiplierDisplay +
+                ".",
+            ];
+            return steps;
+          },
+
+          rtpPercentDisplay() {
+            return (this.rtp * 100).toFixed(0) + "%";
+          },
+
+          copyButtonText() {
+            return this.copyFeedback || this.t("copyButton");
+          },
+
+          copyableVerificationText() {
+            const lines = [
+              this.t("copyTitle"),
+              this.t("copyServerSeed") + ": " + this.server_seed,
+              this.t("copyClientSeed") + ": " + this.client_seed,
+              this.t("copyServerSeedHash") + ": " + (this.server_seed_hash || "-"),
+              this.t("copyNonce") + ": " + this.nonce,
+              this.t("copyMineCount") + ": " + this.mines_count,
+              this.t("copySafeHits") + ": " + this.safe_hits,
+              this.t("copySha") + ": " + this.sha256ServerSeed,
+              this.t("copyFirstInput") + ": " + (this.firstStep ? this.firstStep.message : "--"),
+              this.t("copyFirstHmac") + ": " + (this.firstStep ? this.firstStep.hash : "--"),
+              this.t("copyFirstRandom") + ": " + this.firstRandomDisplay,
+              this.t("copyTileOrder") + ": " + this.tileOrderOneBasedText,
+              this.t("copyMinePositions") + ": " + this.minePositionsText,
+              this.t("copyMultiplier") + ": " + this.multiplierDisplay,
+            ];
+
+            return lines.join("\n");
+          },
+        },
+        watch: {
+          tileOrderZeroBased() {
+            if (typeof ga !== "function" || !this.canRenderResult) return;
+
+            ga("send", "event", "Mines", "verify", this.server_seed, {
+              metric0: this.client_seed,
+              metric1: this.numericNonce,
+            });
+          },
+        },
+        methods: {
+          t(key, params) {
+            const dictionary = TRANSLATIONS[this.current_lang] || TRANSLATIONS.en;
+            const entry = dictionary[key];
+            if (typeof entry === "function") {
+              return entry(params || {});
+            }
+            return entry || key;
+          },
+
+          setLanguage(lang) {
+            if (SUPPORTED_LANGS.indexOf(lang) === -1) return;
+            this.current_lang = lang;
+            this.applyLanguage();
+          },
+
+          applyLanguage() {
+            document.documentElement.lang = this.current_lang;
+            document.title = this.t("pageTitle");
+            try {
+              window.localStorage.setItem(LANGUAGE_KEY, this.current_lang);
+            } catch (error) {}
+          },
+
+          parseInteger(value) {
+            if (!/^\d+$/.test(String(value).trim())) return null;
+            const parsed = Number.parseInt(value, 10);
+            return Number.isFinite(parsed) ? parsed : null;
+          },
+
+          formatRandom(value) {
+            return Number(value).toFixed(12);
+          },
+
+          isMineDisplayCell(oneBasedCell) {
+            return this.minePositionsOneBased.indexOf(oneBasedCell) !== -1;
+          },
+
+          loadExample() {
+            this.server_seed = this.demoValues.server_seed;
+            this.client_seed = this.demoValues.client_seed;
+            this.nonce = this.demoValues.nonce;
+            this.mines_count = this.demoValues.mines_count;
+            this.safe_hits = this.demoValues.safe_hits;
+          },
+
+          copyVerificationSummary() {
+            const text = this.copyableVerificationText;
+
+            if (!navigator.clipboard || !navigator.clipboard.writeText) {
+              this.copyFeedback = this.t("copyUnavailable");
+              this.resetCopyFeedback();
+              return;
+            }
+
+            navigator.clipboard.writeText(text)
+              .then(() => {
+                this.copyFeedback = this.t("copyCopied");
+                this.resetCopyFeedback();
+              })
+              .catch(() => {
+                this.copyFeedback = this.t("copyFailed");
+                this.resetCopyFeedback();
+              });
+          },
+
+          resetCopyFeedback() {
+            window.clearTimeout(this.copyTimer);
+            this.copyTimer = window.setTimeout(() => {
+              this.copyFeedback = "";
+            }, 1800);
+          },
+        },
+        mounted() {
+          this.applyLanguage();
+        },
+      });
+    </script>
+  </body>
 </html>
