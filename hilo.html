@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Hilo Verification Page</title>
+  <link rel="stylesheet" href="./lib/bootstrap.min.css">
+  <script src="./lib/vue.min.js"></script>
+  <script src="./lib/crypto-js.js"></script>
+  <style>
+    :root {
+      --bg: #f6f1e8;
+      --panel: #fffaf3;
+      --panel-soft: #f9f3ea;
+      --border: rgba(90, 67, 36, 0.16);
+      --text: #22180c;
+      --muted: #6d5943;
+      --accent: #b55a2a;
+      --accent-dark: #7b3115;
+      --success: #25734b;
+      --danger: #b23a3a;
+      --shadow: 0 20px 50px rgba(91, 58, 24, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.72), transparent 25%),
+        radial-gradient(circle at right center, rgba(181, 90, 42, 0.12), transparent 20%),
+        linear-gradient(145deg, #f7f1e8 0%, #eee0cb 100%);
+    }
+
+    code,
+    pre {
+      font-family: "SFMono-Regular", "Menlo", monospace;
+    }
+
+    .page-shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 32px 18px 48px;
+    }
+
+    .hero,
+    .panel {
+      background: rgba(255, 250, 243, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .hero {
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .hero-grid,
+    .content-grid,
+    .summary-grid,
+    .rules-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .hero-grid {
+      grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.9fr);
+      align-items: start;
+    }
+
+    .content-grid {
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .summary-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .rules-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .eyebrow,
+    .section-label,
+    .metric-label,
+    .small-note,
+    .table-note {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+
+    .hero h1 {
+      margin: 10px 0 14px;
+      font-size: clamp(2rem, 4vw, 3.25rem);
+      line-height: 1.06;
+    }
+
+    .hero p,
+    .metric-copy,
+    .helper-list li,
+    .formula-list li,
+    .rule-card li,
+    .path-summary p,
+    .empty-state,
+    .language-copy {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .hero-callout,
+    .rule-card,
+    .metric-card,
+    .path-summary,
+    .sequence-box,
+    .formula-card,
+    .language-box {
+      background: linear-gradient(180deg, rgba(181, 90, 42, 0.08), rgba(255, 255, 255, 0.42));
+      border: 1px solid rgba(90, 67, 36, 0.1);
+      border-radius: 18px;
+      padding: 18px 20px;
+    }
+
+    .hero-callout strong,
+    .metric-card strong,
+    .formula-card strong,
+    .language-box strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .panel {
+      padding: 22px;
+      margin-bottom: 22px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .panel-head h2,
+    .panel-head h3 {
+      margin: 0;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .input-helper {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      border: 1px solid rgba(90, 67, 36, 0.14);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--text);
+      padding: 12px 14px;
+      outline: none;
+      resize: vertical;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: rgba(181, 90, 42, 0.45);
+      box-shadow: 0 0 0 4px rgba(181, 90, 42, 0.1);
+    }
+
+    .field textarea {
+      min-height: 96px;
+    }
+
+    .helper-list,
+    .formula-list,
+    .rule-card ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+    }
+
+    .metric-value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .metric-value code {
+      font-size: 0.88rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      background: rgba(90, 67, 36, 0.08);
+      color: var(--muted);
+    }
+
+    .status-pill.match {
+      background: rgba(37, 115, 75, 0.12);
+      color: var(--success);
+    }
+
+    .status-pill.mismatch {
+      background: rgba(178, 58, 58, 0.12);
+      color: var(--danger);
+    }
+
+    .cards-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .card-tile {
+      min-width: 88px;
+      padding: 14px 12px;
+      border-radius: 18px;
+      background: linear-gradient(160deg, #fffefc 0%, #f4e4d2 100%);
+      border: 1px solid rgba(181, 90, 42, 0.18);
+      box-shadow: 0 10px 25px rgba(90, 67, 36, 0.08);
+      text-align: center;
+    }
+
+    .card-tile .rank {
+      font-size: 1.7rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .card-tile .detail {
+      margin-top: 8px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .path-summary.good .metric-value,
+    .text-good {
+      color: var(--success);
+    }
+
+    .path-summary.bad .metric-value,
+    .text-bad {
+      color: var(--danger);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 18px;
+      border: 1px solid rgba(90, 67, 36, 0.1);
+    }
+
+    table {
+      margin: 0;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #f7efe2;
+      white-space: nowrap;
+      border-top: 0;
+    }
+
+    tbody td,
+    tbody th {
+      vertical-align: middle;
+    }
+
+    .mono {
+      font-family: "SFMono-Regular", "Menlo", monospace;
+      word-break: break-all;
+    }
+
+    .choice-badge,
+    .result-badge,
+    .lang-button {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      background: rgba(90, 67, 36, 0.08);
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .choice-badge.high {
+      background: rgba(37, 115, 75, 0.12);
+      color: var(--success);
+    }
+
+    .choice-badge.low {
+      background: rgba(52, 97, 158, 0.12);
+      color: #295c9f;
+    }
+
+    .choice-badge.skip {
+      background: rgba(181, 90, 42, 0.12);
+      color: var(--accent-dark);
+    }
+
+    .result-badge.win {
+      background: rgba(37, 115, 75, 0.12);
+      color: var(--success);
+    }
+
+    .result-badge.lose,
+    .result-badge.invalid {
+      background: rgba(178, 58, 58, 0.12);
+      color: var(--danger);
+    }
+
+    .result-badge.skip {
+      background: rgba(181, 90, 42, 0.12);
+      color: var(--accent-dark);
+    }
+
+    .result-badge.pending {
+      background: rgba(90, 67, 36, 0.08);
+      color: var(--muted);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .mb-0 {
+      margin-bottom: 0;
+    }
+
+    .language-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .advanced-toggle {
+      margin-top: 16px;
+      border: 1px solid rgba(90, 67, 36, 0.12);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.42);
+      overflow: hidden;
+    }
+
+    .advanced-toggle summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 14px 16px;
+      font-weight: 700;
+      color: var(--text);
+      background: rgba(90, 67, 36, 0.04);
+    }
+
+    .advanced-toggle summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .advanced-body {
+      padding: 16px;
+      border-top: 1px solid rgba(90, 67, 36, 0.08);
+    }
+
+    .lang-button {
+      border: 0;
+      padding: 12px 18px;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .lang-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .lang-button.is-active {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      color: #fff6ef;
+      box-shadow: 0 18px 28px rgba(122, 46, 22, 0.18);
+    }
+
+    @media (max-width: 1080px) {
+
+      .hero-grid,
+      .content-grid,
+      .summary-grid,
+      .rules-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="page-shell">
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <span class="eyebrow">{{ copy.eyebrow }}</span>
+          <h1>{{ copy.heroTitle }}</h1>
+          <p class="mb-0" v-html="copy.heroBody"></p>
+          <ul class="helper-list">
+            <li v-for="(item, index) in copy.heroBullets" :key="'hero-' + index" v-html="item"></li>
+          </ul>
+        </div>
+        <div class="hero-callout">
+          <strong>{{ copy.calloutTitle }}</strong>
+          <p class="mb-0" v-html="copy.calloutBody"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <div>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="section-label">{{ copy.sectionLabels.input }}</div>
+              <h2>{{ copy.headings.inputs }}</h2>
+            </div>
+          </div>
+          <p class="input-helper">{{ copy.inputHelper }}</p>
+          <div class="form-grid">
+            <div class="field">
+              <label for="server-seed">{{ copy.fields.serverSeed }}</label>
+              <input id="server-seed" v-model.trim="server_seed" :placeholder="copy.placeholders.serverSeed">
+            </div>
+            <div class="field">
+              <label for="client-seed">{{ copy.fields.clientSeed }}</label>
+              <input id="client-seed" v-model.trim="client_seed" :placeholder="copy.placeholders.clientSeed">
+            </div>
+            <div class="field">
+              <label for="nonce-start">{{ copy.fields.nonceStart }}</label>
+              <input id="nonce-start" v-model.trim="nonce_start" :placeholder="copy.placeholders.nonceStart">
+            </div>
+          </div>
+          <details class="advanced-toggle">
+            <summary>{{ copy.advanced.title }}</summary>
+            <div class="advanced-body">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="server-seed-hash">{{ copy.fields.serverSeedHash }}</label>
+                  <input id="server-seed-hash" v-model.trim="server_seed_hash"
+                    :placeholder="copy.placeholders.serverSeedHash">
+                </div>
+                <div class="field">
+                  <label for="steps">{{ copy.fields.steps }}</label>
+                  <input id="steps" v-model.trim="steps" :placeholder="copy.placeholders.steps">
+                </div>
+                <div class="field">
+                  <label for="choice-text">{{ copy.fields.choices }}</label>
+                  <textarea id="choice-text" v-model.trim="choice_text"
+                    :placeholder="copy.placeholders.choices"></textarea>
+                  <div class="small-note">{{ copy.advanced.description }}</div>
+                </div>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="section-label">{{ copy.sectionLabels.rules }}</div>
+              <h3>{{ copy.headings.rules }}</h3>
+            </div>
+          </div>
+          <div class="rules-grid">
+            <div class="rule-card">
+              <strong>{{ copy.rulesCards.fairnessTitle }}</strong>
+              <ul>
+                <li v-for="(item, index) in copy.rulesCards.fairnessList" :key="'fair-' + index" v-html="item"></li>
+              </ul>
+            </div>
+            <div class="rule-card">
+              <strong>{{ copy.rulesCards.gameplayTitle }}</strong>
+              <ul>
+                <li v-for="(item, index) in copy.rulesCards.gameplayList" :key="'game-' + index" v-html="item"></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="section-label">{{ copy.sectionLabels.summary }}</div>
+              <h2>{{ copy.headings.summary }}</h2>
+            </div>
+            <span class="status-pill" :class="hashStatusClass">{{ hashMatchedText }}</span>
+          </div>
+          <div class="summary-grid">
+            <div class="metric-card">
+              <div class="metric-label">{{ copy.metricLabels.hash }}</div>
+              <div class="metric-value"><code>{{ sha256ServerSeed || copy.common.na }}</code></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">{{ copy.metricLabels.firstCard }}</div>
+              <div class="metric-value">{{ firstCardLabel }}</div>
+              <div class="metric-copy">{{ tf('summary.nonceLabel', { nonce: normalizedNonceStart }) }}</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">{{ copy.metricLabels.nonceRange }}</div>
+              <div class="metric-value">{{ nonceRangeText }}</div>
+              <div class="metric-copy">{{ tf('summary.stepsLabel', { steps: normalizedSteps }) }}</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">{{ copy.metricLabels.choices }}</div>
+              <div class="metric-value">{{ choiceCountText }}</div>
+              <div class="metric-copy">{{ tf('summary.maxChoices', { count: maxChoiceCount }) }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="section-label">{{ copy.sectionLabels.singlePoint }}</div>
+              <h3>{{ copy.headings.singlePoint }}</h3>
+            </div>
+          </div>
+          <div v-if="singleCard" class="sequence-box">
+            <p class="table-note">{{ copy.common.message }}</p>
+            <p class="mono">{{ singleCard.message }}</p>
+            <p class="table-note">{{ copy.single.hmacLabel }}</p>
+            <p class="mono">{{ singleCard.hash }}</p>
+            <ul class="formula-list">
+              <li v-html="tf('single.numFormula', { num: singleCard.num })"></li>
+              <li v-html="tf('single.cardFormula', { card: singleCard.card, label: singleCard.label })"></li>
+            </ul>
+          </div>
+          <div v-else class="empty-state" v-html="copy.common.noSingleCard"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="section-label">{{ copy.sectionLabels.sequence }}</div>
+              <h3>{{ copy.headings.sequence }}</h3>
+            </div>
+          </div>
+          <div v-if="sequence.length" class="cards-strip">
+            <div v-for="card in sequence" :key="'tile-' + card.index" class="card-tile">
+              <div class="rank">{{ card.label }}</div>
+              <div class="detail">{{ tf('sequence.cardDetail', { index: card.index, nonce: card.nonce }) }}</div>
+            </div>
+          </div>
+          <div v-else class="empty-state">{{ copy.common.noSequence }}</div>
+        </section>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="section-label">{{ copy.sectionLabels.roundVerify }}</div>
+          <h2>{{ copy.headings.round }}</h2>
+        </div>
+      </div>
+      <div v-if="sequence.length" class="table-wrap">
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr>
+              <th>{{ copy.roundTable.index }}</th>
+              <th>{{ copy.roundTable.nonce }}</th>
+              <th>{{ copy.roundTable.message }}</th>
+              <th>{{ copy.roundTable.hash }}</th>
+              <th>{{ copy.roundTable.hashPrefix }}</th>
+              <th>{{ copy.roundTable.card }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in sequence" :key="'seq-' + row.index">
+              <th>{{ row.index }}</th>
+              <td>{{ row.nonce }}</td>
+              <td class="mono">{{ row.message }}</td>
+              <td class="mono">{{ row.hash }}</td>
+              <td class="mono">{{ row.hashPrefix }}</td>
+              <td><strong>{{ row.label }}</strong> <span class="muted">({{ row.card }})</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-else class="empty-state" v-html="copy.common.noRound"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="section-label">{{ copy.sectionLabels.pathVerify }}</div>
+          <h2>{{ copy.headings.path }}</h2>
+        </div>
+      </div>
+      <div class="path-summary" :class="pathSummaryClass">
+        <strong>{{ copy.path.badgeTitle }}</strong>
+        <div class="metric-value">{{ pathSummaryTitle }}</div>
+        <p class="mb-0">{{ pathSummaryText }}</p>
+      </div>
+      <div v-if="transitionRows.length" class="table-wrap mt-3">
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr>
+              <th>{{ copy.path.step }}</th>
+              <th>{{ copy.path.current }}</th>
+              <th>{{ copy.path.next }}</th>
+              <th>{{ copy.path.highProbability }}</th>
+              <th>{{ copy.path.highMultiplier }}</th>
+              <th>{{ copy.path.lowProbability }}</th>
+              <th>{{ copy.path.lowMultiplier }}</th>
+              <th>{{ copy.path.choice }}</th>
+              <th>{{ copy.path.result }}</th>
+              <th>{{ copy.path.stepMultiplier }}</th>
+              <th>{{ copy.path.totalMultiplier }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in transitionRows" :key="'path-' + row.index">
+              <th>{{ row.index }}</th>
+              <td><strong>{{ row.currentLabel }}</strong> <span class="muted">({{ row.current }})</span></td>
+              <td><strong>{{ row.nextLabel }}</strong> <span class="muted">({{ row.next }})</span></td>
+              <td>{{ formatPercent(row.highProbability) }}</td>
+              <td>{{ formatMultiplier(row.highMultiplier) }}</td>
+              <td>{{ formatPercent(row.lowProbability) }}</td>
+              <td>{{ formatMultiplier(row.lowMultiplier) }}</td>
+              <td>
+                <span class="choice-badge" :class="row.choiceClass">{{ row.choiceLabel }}</span>
+              </td>
+              <td>
+                <span class="result-badge" :class="row.resultClass">{{ row.resultText }}</span>
+              </td>
+              <td>{{ formatMultiplier(row.stepMultiplier) }}</td>
+              <td>{{ formatMultiplier(row.runningAfter) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-else class="empty-state mt-3" v-html="copy.common.pathNeedsTwoCards"></div>
+    </section>
+
+    <section class="content-grid">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="section-label">{{ copy.sectionLabels.formula }}</div>
+            <h3>{{ copy.headings.formula }}</h3>
+          </div>
+        </div>
+        <div class="formula-card">
+          <strong>{{ copy.formula.fairnessTitle }}</strong>
+          <ol class="formula-list">
+            <li v-for="(item, index) in copy.formula.fairnessList" :key="'formula-fair-' + index" v-html="item"></li>
+          </ol>
+        </div>
+        <div class="formula-card mt-3">
+          <strong>{{ copy.formula.payoutTitle }}</strong>
+          <ol class="formula-list">
+            <li v-for="(item, index) in copy.formula.payoutList" :key="'formula-pay-' + index" v-html="item"></li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="section-label">{{ copy.sectionLabels.notes }}</div>
+            <h3>{{ copy.headings.notes }}</h3>
+          </div>
+        </div>
+        <div class="rule-card">
+          <ul>
+            <li v-for="(item, index) in copy.notesList" :key="'note-' + index" v-html="item"></li>
+          </ul>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="section-label">{{ copy.sectionLabels.language }}</div>
+          <h3>{{ copy.language.title }}</h3>
+        </div>
+      </div>
+      <div class="language-box">
+        <strong>{{ copy.language.title }}</strong>
+        <p class="language-copy mb-0">{{ copy.language.description }}</p>
+        <div class="language-actions">
+          <button type="button" class="lang-button" :class="{ 'is-active': lang === 'en' }"
+            @click="setLanguage('en')">{{ copy.language.en }}</button>
+          <button type="button" class="lang-button" :class="{ 'is-active': lang === 'es' }"
+            @click="setLanguage('es')">{{ copy.language.es }}</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    var query = new URLSearchParams(window.location.search);
+
+    new Vue({
+      el: '#app',
+      data: {
+        lang: query.get('lang') === 'es' ? 'es' : 'en',
+        server_seed: query.get('s') || '',
+        server_seed_hash: query.get('h') || '',
+        client_seed: query.get('c') || '',
+        nonce_start: query.get('n') || query.get('nonce') || '0',
+        steps: query.get('steps') || '1',
+        choice_text: query.get('choices') || query.get('path') || '',
+        rtp_input: query.get('rtp') || '0.96',
+        i18n: {
+          en: {
+            pageTitle: 'Hilo Verification Page',
+            eyebrow: 'Provably Fair Verifier',
+            heroTitle: 'Hilo Verification Page',
+            heroBody: 'This page follows your gameplay and provably fair specifications and supports <strong>single-point verification</strong> and <strong>full-round reconstruction</strong>. The core random logic is fixed to <code>HMAC_SHA256(clientSeed:nonce, serverSeed)</code>. Each card consumes 1 nonce, and a full round is uniquely determined by <code>nonceStart + steps</code>.',
+            heroBullets: [
+              '<strong>Card mapping:</strong> <code>card = (int(hash[0:8], 16) % 13) + 1</code>',
+              '<strong>Edge rule:</strong> LOW is disabled when the current card is A, and HIGH is disabled when the current card is K',
+              '<strong>Standard judgement:</strong> HIGH requires <code>next &gt; current</code>, LOW requires <code>next &lt; current</code>, and ties lose',
+            ],
+            calloutTitle: 'Fields the verifier should show',
+            calloutBody: 'Server Seed Hash, Client Seed, nonce start, steps, the reconstructed full card sequence, and the probability and multiplier for each High / Low step. This lets users verify both randomness and whether the round path follows the rules.',
+            sectionLabels: {
+              input: 'Input',
+              rules: 'Rules',
+              summary: 'Summary',
+              singlePoint: 'Single Point',
+              sequence: 'Sequence',
+              roundVerify: 'Round Verify',
+              pathVerify: 'Path Verify',
+              formula: 'Formula',
+              notes: 'Verifier Notes',
+              language: 'Language',
+            },
+            headings: {
+              inputs: 'Verification Inputs',
+              rules: 'Specification Rules',
+              summary: 'Quick Results',
+              singlePoint: 'Single-Point Verification',
+              sequence: 'Full Round Sequence',
+              round: 'Full Round Reconstruction Details',
+              path: 'High / Low / Skip Path Verification',
+              formula: 'Core Formula',
+              notes: 'Page Notes',
+            },
+            inputHelper: 'For the minimum verification flow, you only need <strong>server seed</strong>, <strong>client seed</strong>, and <strong>nonce</strong>. The advanced section is only needed for hash matching, full-round reconstruction, or multiplier/path checks.',
+            advanced: {
+              title: 'Advanced Options',
+              description: 'Use these only when you need to compare the server-seed hash, reconstruct a full round with multiple cards, or validate the choice path.',
+            },
+            fields: {
+              serverSeed: 'Server Seed',
+              serverSeedHash: 'Server Seed Hash',
+              clientSeed: 'Client Seed',
+              nonceStart: 'Nonce',
+              steps: 'Steps',
+              choices: 'Choice Path (Optional)',
+            },
+            placeholders: {
+              serverSeed: 'The server seed revealed after the round',
+              serverSeedHash: 'SHA256(serverSeed) shown before the round starts',
+              clientSeed: 'Player client seed',
+              nonceStart: 'Nonce for a single card, or the start nonce of a round',
+              steps: 'Optional. Use values greater than 1 to reconstruct a full round',
+              choices: 'Enter high, low, skip in order, for example: low, high, skip',
+            },
+            smallNote: 'Used to verify a round path. If left empty, the page only reconstructs the card sequence and the probability of each step.',
+            rulesCards: {
+              fairnessTitle: 'Provably Fair',
+              fairnessList: [
+                'Show <code>SHA256(serverSeed)</code> before the round starts',
+                'Each card consumes exactly 1 nonce',
+                'The nonce increases globally, and the verification range is <code>[start, start + steps - 1]</code>',
+                'Use the nonce first to generate the card, then increment the nonce',
+              ],
+              gameplayTitle: 'Gameplay Rules',
+              gameplayList: [
+                '<code>P(high) = (13 - current) / 13</code>',
+                '<code>P(low) = (current - 1) / 13</code>',
+                'Skip generates a new card but does not change the accumulated multiplier',
+              ],
+            },
+            metricLabels: {
+              hash: 'sha256(server_seed)',
+              firstCard: 'First Card',
+              nonceRange: 'Nonce Range',
+              choices: 'Choices',
+            },
+            summary: {
+              nonceLabel: 'nonce {nonce}',
+              stepsLabel: 'steps = {steps}',
+              maxChoices: 'Up to {count} decisions can be verified',
+            },
+            common: {
+              na: 'N/A',
+              message: 'Message',
+              noSingleCard: 'Enter <code>serverSeed</code> and <code>clientSeed</code> to compute the card for the selected nonce.',
+              noSequence: 'No reconstructed sequence is available yet.',
+              noRound: 'Enter valid seed values and steps to reconstruct the full sequence.',
+              pathNeedsTwoCards: 'Path validation requires at least 2 cards, so <code>steps</code> must be 2 or greater.',
+            },
+            sequence: {
+              cardDetail: '#{index} · nonce {nonce}',
+            },
+            status: {
+              noHash: 'Server Seed Hash not provided',
+              match: 'Server Seed Hash matches',
+              mismatch: 'Server Seed Hash does not match',
+            },
+            single: {
+              hmacLabel: 'hmac_sha256(clientSeed:nonce, serverSeed)',
+              numFormula: '<code>num = parseInt(hash.substring(0, 8), 16)</code> = <code>{num}</code>',
+              cardFormula: '<code>card = (num % 13) + 1</code> = <code>{card}</code>, displayed as <code>{label}</code>',
+            },
+            roundTable: {
+              index: '#',
+              nonce: 'Nonce',
+              message: 'Message',
+              hash: 'Hash',
+              hashPrefix: 'Hash[0:8]',
+              card: 'Card',
+            },
+            path: {
+              badgeTitle: 'Path Summary',
+              step: 'Step',
+              current: 'Current',
+              next: 'Next',
+              highProbability: 'HIGH Probability',
+              highMultiplier: 'HIGH Multiplier',
+              lowProbability: 'LOW Probability',
+              lowMultiplier: 'LOW Multiplier',
+              choice: 'Choice',
+              result: 'Result',
+              stepMultiplier: 'Step Multiplier',
+              totalMultiplier: 'Total Multiplier',
+              noPathTitle: 'Random reconstruction completed, no path entered',
+              insufficientTitle: 'Not enough cards to validate the path',
+              failureStep: 'Failed on step {step}',
+              currentTotal: 'Current total multiplier {value}',
+              noPathText: 'The page has already reconstructed the full card sequence from the nonce range. To validate a specific round path, enter the High / Low / Skip sequence.',
+              overflowText: 'You entered more choices than the available steps. Extra choices are ignored. Because steps is the number of cards, there can be at most steps - 1 High / Low / Skip decisions.',
+              shortText: 'Only the first {count} choices are being validated right now. Fill in the remaining steps if you want a complete path verification.',
+              fullText: 'The number of entered choices matches the round length, and the page has completed step-by-step verification under the standard rule.',
+            },
+            formula: {
+              fairnessTitle: 'Provably Fair Randomness',
+              fairnessList: [
+                '<code>message = clientSeed + ":" + nonce</code>',
+                '<code>hash = HMAC_SHA256(message, serverSeed)</code>',
+                '<code>num = parseInt(hash.substring(0, 8), 16)</code>',
+                '<code>card = (num % 13) + 1</code>',
+              ],
+              payoutTitle: 'Probabilities and Multipliers',
+              payoutList: [
+                '<code>P(high) = (13 - current) / 13</code>',
+                '<code>P(low) = (current - 1) / 13</code>',
+                '<code>Total Multiplier *= Step Multiplier</code>',
+              ],
+            },
+            notesList: [
+              '<strong>Single-point verification:</strong> shows only the card at the starting nonce and is useful for development or debugging.',
+              '<strong>Round verification:</strong> reconstructs the whole sequence from <code>nonceStart</code> to <code>nonceStart + steps - 1</code>.',
+              '<strong>Path verification:</strong> if you enter a <code>high / low / skip</code> sequence, the page evaluates each step and the accumulated multiplier with the standard rule.',
+              '<strong>Ties lose:</strong> under HIGH or LOW, <code>next == current</code> is treated as a loss. Only Skip avoids win/loss judgement.',
+              '<strong>Suits:</strong> the current document only defines rank mapping, so this verifier focuses on card values and does not invent an undefined suit algorithm.',
+            ],
+            results: {
+              notValidated: 'Not validated',
+              noChoice: 'No choice provided',
+              invalidInput: 'Invalid input',
+              previousLost: 'A previous step already failed',
+              skip: 'Skip',
+              highDisabled: 'Invalid, HIGH is disabled',
+              lowDisabled: 'Invalid, LOW is disabled',
+              win: 'Win',
+              loseTie: 'Lose (tie loses)',
+              lose: 'Lose',
+            },
+            choiceLabels: {
+              empty: 'Not entered',
+              high: 'HIGH',
+              low: 'LOW',
+              skip: 'SKIP',
+              invalid: 'Invalid',
+            },
+            language: {
+              title: 'Language Switch',
+              description: 'Use the buttons below to switch all page content between English and Spanish.',
+              en: 'English',
+              es: 'Español',
+            },
+          },
+          es: {
+            pageTitle: 'Página de verificación de Hilo',
+            eyebrow: 'Verificador Provably Fair',
+            heroTitle: 'Página de verificación de Hilo',
+            heroBody: 'Esta página sigue las especificaciones de jugabilidad y de Provably Fair que compartiste y soporta <strong>verificación puntual</strong> y <strong>reconstrucción de la ronda completa</strong>. La lógica aleatoria central está fijada en <code>HMAC_SHA256(clientSeed:nonce, serverSeed)</code>. Cada carta consume 1 nonce y una ronda completa queda determinada de forma única por <code>nonceStart + steps</code>.',
+            heroBullets: [
+              '<strong>Mapeo de carta:</strong> <code>card = (int(hash[0:8], 16) % 13) + 1</code>',
+              '<strong>Regla de borde:</strong> LOW se desactiva cuando la carta actual es A y HIGH se desactiva cuando la carta actual es K',
+              '<strong>Regla estándar:</strong> HIGH requiere <code>next &gt; current</code>, LOW requiere <code>next &lt; current</code> y el empate pierde',
+            ],
+            calloutTitle: 'Campos que debe mostrar el verificador',
+            calloutBody: 'Hash de la semilla del servidor, semilla del cliente, nonce inicial, pasos, la secuencia completa de cartas reconstruida y la probabilidad y el multiplicador de cada paso Alta / Baja. Así el usuario puede verificar tanto la aleatoriedad como si la ruta de la ronda sigue las reglas.',
+            sectionLabels: {
+              input: 'Entrada',
+              rules: 'Reglas',
+              summary: 'Resumen',
+              singlePoint: 'Punto único',
+              sequence: 'Secuencia',
+              roundVerify: 'Verificación de ronda',
+              pathVerify: 'Verificación de ruta',
+              formula: 'Fórmula',
+              notes: 'Notas del verificador',
+              language: 'Idioma',
+            },
+            headings: {
+              inputs: 'Datos de verificación',
+              rules: 'Reglas de la especificación',
+              summary: 'Resultados rápidos',
+              singlePoint: 'Verificación puntual',
+              sequence: 'Secuencia completa de la ronda',
+              round: 'Detalles de reconstrucción de la ronda',
+              path: 'Validación de la ruta Alta / Baja / Saltar',
+              formula: 'Fórmulas clave',
+              notes: 'Notas de la página',
+            },
+            inputHelper: 'Para el flujo mínimo de verificación solo necesitas <strong>semilla del servidor</strong>, <strong>semilla del cliente</strong> y <strong>nonce</strong>. La sección avanzada solo hace falta para comparar el hash, reconstruir una ronda completa o validar multiplicadores y rutas.',
+            advanced: {
+              title: 'Opciones avanzadas',
+              description: 'Úsalas solo si necesitas comparar el hash de la semilla del servidor, reconstruir una ronda completa con varias cartas o validar la ruta de elecciones.',
+            },
+            fields: {
+              serverSeed: 'Semilla del servidor',
+              serverSeedHash: 'Hash de la semilla del servidor',
+              clientSeed: 'Semilla del cliente',
+              nonceStart: 'Nonce',
+              steps: 'Pasos',
+              choices: 'Ruta de elecciones (opcional)',
+            },
+            placeholders: {
+              serverSeed: 'El server seed revelado después de la ronda',
+              serverSeedHash: 'SHA256(serverSeed) mostrado antes de empezar la ronda',
+              clientSeed: 'Client seed del jugador',
+              nonceStart: 'Nonce para una sola carta o nonce inicial de una ronda',
+              steps: 'Opcional. Usa valores mayores que 1 para reconstruir una ronda completa',
+              choices: 'Escribe high, low, skip o alta, baja, saltar en orden; por ejemplo: low, high, skip',
+            },
+            smallNote: 'Se usa para verificar la ruta de una ronda. Si se deja vacío, la página solo reconstruye la secuencia de cartas y la probabilidad de cada paso.',
+            rulesCards: {
+              fairnessTitle: 'Provably Fair',
+              fairnessList: [
+                'Mostrar <code>SHA256(serverSeed)</code> antes de que empiece la ronda',
+                'Cada carta consume exactamente 1 nonce',
+                'El nonce aumenta de forma global y el rango de verificación es <code>[start, start + steps - 1]</code>',
+                'Primero se usa el nonce para generar la carta y después se incrementa',
+              ],
+              gameplayTitle: 'Reglas del juego',
+              gameplayList: [
+                '<code>P(high) = (13 - current) / 13</code>',
+                '<code>P(low) = (current - 1) / 13</code>',
+                'Skip genera una nueva carta pero no cambia el multiplicador acumulado',
+              ],
+            },
+            metricLabels: {
+              hash: 'sha256(server_seed)',
+              firstCard: 'Primera carta',
+              nonceRange: 'Rango de nonce',
+              choices: 'Elecciones',
+            },
+            summary: {
+              nonceLabel: 'nonce {nonce}',
+              stepsLabel: 'steps = {steps}',
+              maxChoices: 'Se pueden verificar hasta {count} decisiones',
+            },
+            common: {
+              na: 'N/A',
+              message: 'Mensaje',
+              noSingleCard: 'Introduce <code>serverSeed</code> y <code>clientSeed</code> para calcular la carta del nonce seleccionado.',
+              noSequence: 'Todavía no hay ninguna secuencia reconstruida.',
+              noRound: 'Introduce seeds válidos y steps válidos para reconstruir la secuencia completa.',
+              pathNeedsTwoCards: 'La validación de la ruta requiere al menos 2 cartas, así que <code>steps</code> debe ser 2 o mayor.',
+            },
+            sequence: {
+              cardDetail: '#{index} · nonce {nonce}',
+            },
+            status: {
+              noHash: 'No se proporcionó el hash de la semilla del servidor',
+              match: 'El hash de la semilla del servidor coincide',
+              mismatch: 'El hash de la semilla del servidor no coincide',
+            },
+            single: {
+              hmacLabel: 'hmac_sha256(clientSeed:nonce, serverSeed)',
+              numFormula: '<code>num = parseInt(hash.substring(0, 8), 16)</code> = <code>{num}</code>',
+              cardFormula: '<code>card = (num % 13) + 1</code> = <code>{card}</code>, mostrado como <code>{label}</code>',
+            },
+            roundTable: {
+              index: '#',
+              nonce: 'Nonce',
+              message: 'Mensaje',
+              hash: 'Hash',
+              hashPrefix: 'Hash[0:8]',
+              card: 'Carta',
+            },
+            path: {
+              badgeTitle: 'Resumen de la ruta',
+              step: 'Paso',
+              current: 'Actual',
+              next: 'Siguiente',
+              highProbability: 'Prob. ALTA',
+              highMultiplier: 'Multiplicador ALTA',
+              lowProbability: 'Prob. BAJA',
+              lowMultiplier: 'Multiplicador BAJA',
+              choice: 'Elección',
+              result: 'Resultado',
+              stepMultiplier: 'Multiplicador del paso',
+              totalMultiplier: 'Multiplicador total',
+              noPathTitle: 'Reconstrucción aleatoria completada, sin ruta ingresada',
+              insufficientTitle: 'No hay cartas suficientes para validar la ruta',
+              failureStep: 'Falló en el paso {step}',
+              currentTotal: 'Multiplicador total actual {value}',
+              noPathText: 'La página ya reconstruyó la secuencia completa de cartas a partir del rango de nonce. Para validar una ruta específica de la ronda, introduce la secuencia Alta / Baja / Saltar.',
+              overflowText: 'Ingresaste más elecciones de las que permiten los pasos disponibles. Las elecciones extra se ignoran. Como pasos es el número de cartas, puede haber como máximo pasos - 1 decisiones Alta / Baja / Saltar.',
+              shortText: 'Por ahora solo se validan las primeras {count} elecciones. Completa los pasos restantes si quieres una validación completa de la ruta.',
+              fullText: 'La cantidad de elecciones ingresadas coincide con la longitud de la ronda y la página ya completó la verificación paso a paso con la regla estándar.',
+            },
+            formula: {
+              fairnessTitle: 'Aleatoriedad Provably Fair',
+              fairnessList: [
+                '<code>message = clientSeed + ":" + nonce</code>',
+                '<code>hash = HMAC_SHA256(message, serverSeed)</code>',
+                '<code>num = parseInt(hash.substring(0, 8), 16)</code>',
+                '<code>card = (num % 13) + 1</code>',
+              ],
+              payoutTitle: 'Probabilidades y multiplicadores',
+              payoutList: [
+                '<code>P(high) = (13 - current) / 13</code>',
+                '<code>P(low) = (current - 1) / 13</code>',
+                '<code>Total Multiplier *= Step Multiplier</code>',
+              ],
+            },
+            notesList: [
+              '<strong>Verificación puntual:</strong> muestra solo la carta del nonce inicial y sirve para desarrollo o depuración.',
+              '<strong>Verificación de ronda:</strong> reconstruye toda la secuencia desde <code>nonceStart</code> hasta <code>nonceStart + steps - 1</code>.',
+              '<strong>Verificación de ruta:</strong> si introduces una secuencia <code>alta / baja / saltar</code>, la página evalúa cada paso y el multiplicador acumulado usando la regla estándar.',
+              '<strong>El empate pierde:</strong> con ALTA o BAJA, <code>next == current</code> se trata como derrota. Solo SALTAR evita la evaluación de ganar o perder.',
+              '<strong>Palos:</strong> el documento actual solo define el mapeo de valores, así que este verificador se centra en el valor de la carta y no inventa un algoritmo de palos que no está definido.',
+            ],
+            results: {
+              notValidated: 'Sin validar',
+              noChoice: 'Sin elección',
+              invalidInput: 'Entrada no válida',
+              previousLost: 'Un paso anterior ya falló',
+              skip: 'Saltar',
+              highDisabled: 'Inválido, ALTA está deshabilitada',
+              lowDisabled: 'Inválido, BAJA está deshabilitada',
+              win: 'Gana',
+              loseTie: 'Pierde (el empate pierde)',
+              lose: 'Pierde',
+            },
+            choiceLabels: {
+              empty: 'Sin ingresar',
+              high: 'ALTA',
+              low: 'BAJA',
+              skip: 'SALTAR',
+              invalid: 'No válido',
+            },
+            language: {
+              title: 'Cambio de idioma',
+              description: 'Usa los botones de abajo para cambiar todo el contenido de la página entre inglés y español.',
+              en: 'English',
+              es: 'Español',
+            },
+          },
+        },
+      },
+      computed: {
+        copy: function () {
+          return this.i18n[this.lang] || this.i18n.en;
+        },
+        normalizedNonceStart: function () {
+          var value = Number.parseInt(this.nonce_start, 10);
+          return Number.isFinite(value) ? value : 0;
+        },
+        normalizedSteps: function () {
+          var value = Number.parseInt(this.steps, 10);
+          if (!Number.isFinite(value) || value < 1) return 1;
+          if (value > 200) return 200;
+          return value;
+        },
+        normalizedRtp: function () {
+          var value = Number.parseFloat(this.rtp_input);
+          if (!Number.isFinite(value) || value <= 0 || value > 1) return 0.96;
+          return value;
+        },
+        sha256ServerSeed: function () {
+          if (!this.server_seed) return '';
+          return CryptoJS.SHA256(CryptoJS.enc.Utf8.parse(this.server_seed)).toString();
+        },
+        hashMatched: function () {
+          if (!this.server_seed || !this.server_seed_hash) return null;
+          return this.sha256ServerSeed === String(this.server_seed_hash).trim().toLowerCase();
+        },
+        hashMatchedText: function () {
+          if (this.hashMatched === null) return this.tf('status.noHash');
+          return this.hashMatched ? this.tf('status.match') : this.tf('status.mismatch');
+        },
+        hashStatusClass: function () {
+          if (this.hashMatched === null) return '';
+          return this.hashMatched ? 'match' : 'mismatch';
+        },
+        sequence: function () {
+          if (!this.server_seed || !this.client_seed) return [];
+          var rows = [];
+          for (var i = 0; i < this.normalizedSteps; i += 1) {
+            var nonce = this.normalizedNonceStart + i;
+            var message = this.client_seed + ':' + nonce;
+            var hash = CryptoJS.HmacSHA256(message, this.server_seed).toString();
+            var hashPrefix = hash.substring(0, 8);
+            var num = window.parseInt(hashPrefix, 16) >>> 0;
+            var card = (num % 13) + 1;
+            rows.push({
+              index: i + 1,
+              nonce: nonce,
+              message: message,
+              hash: hash,
+              hashPrefix: hashPrefix,
+              num: num,
+              card: card,
+              label: this.cardLabel(card),
+            });
+          }
+          return rows;
+        },
+        singleCard: function () {
+          return this.sequence.length ? this.sequence[0] : null;
+        },
+        firstCardLabel: function () {
+          return this.singleCard ? this.singleCard.label + ' (' + this.singleCard.card + ')' : this.copy.common.na;
+        },
+        nonceRangeText: function () {
+          if (!this.sequence.length) return this.copy.common.na;
+          return this.normalizedNonceStart + ' ~ ' + (this.normalizedNonceStart + this.normalizedSteps - 1);
+        },
+        parsedChoices: function () {
+          if (!this.choice_text) return [];
+          var tokens = String(this.choice_text)
+            .split(/[\s,，|/]+/)
+            .map(function (item) { return item.trim(); })
+            .filter(Boolean);
+
+          return tokens.map(function (token, index) {
+            return {
+              index: index + 1,
+              raw: token,
+              normalized: this.normalizeChoice(token),
+            };
+          }, this);
+        },
+        maxChoiceCount: function () {
+          return Math.max(this.sequence.length - 1, 0);
+        },
+        choiceCountText: function () {
+          if (!this.parsedChoices.length) return this.copy.choiceLabels.empty;
+          return this.parsedChoices.length + ' / ' + this.maxChoiceCount;
+        },
+        transitionRows: function () {
+          if (this.sequence.length < 2) return [];
+
+          var running = 1;
+          var busted = false;
+          var rows = [];
+
+          for (var i = 0; i < this.sequence.length - 1; i += 1) {
+            var currentRow = this.sequence[i];
+            var nextRow = this.sequence[i + 1];
+            var current = currentRow.card;
+            var next = nextRow.card;
+            var highProbability = (13 - current) / 13;
+            var lowProbability = (current - 1) / 13;
+            var highMultiplier = highProbability > 0 ? this.normalizedRtp / highProbability : null;
+            var lowMultiplier = lowProbability > 0 ? this.normalizedRtp / lowProbability : null;
+            var choice = this.parsedChoices[i] ? this.parsedChoices[i].normalized : '';
+            var choiceLabel = this.choiceDisplay(choice);
+            var stepMultiplier = null;
+            var resultText = this.tf('results.notValidated');
+            var resultClass = 'pending';
+            var runningAfter = busted ? 0 : running;
+
+            if (!choice) {
+              resultText = this.tf('results.noChoice');
+            } else if (choice === 'invalid') {
+              busted = true;
+              running = 0;
+              runningAfter = 0;
+              resultText = this.tf('results.invalidInput');
+              resultClass = 'invalid';
+            } else if (busted) {
+              resultText = this.tf('results.previousLost');
+            } else if (choice === 'skip') {
+              stepMultiplier = 1;
+              runningAfter = running;
+              resultText = this.tf('results.skip');
+              resultClass = 'skip';
+            } else if (choice === 'high') {
+              if (highProbability <= 0) {
+                busted = true;
+                running = 0;
+                runningAfter = 0;
+                resultText = this.tf('results.highDisabled');
+                resultClass = 'invalid';
+              } else if (next > current) {
+                stepMultiplier = highMultiplier;
+                running = running * stepMultiplier;
+                runningAfter = running;
+                resultText = this.tf('results.win');
+                resultClass = 'win';
+              } else if (next === current) {
+                busted = true;
+                running = 0;
+                runningAfter = 0;
+                resultText = this.tf('results.loseTie');
+                resultClass = 'lose';
+              } else {
+                busted = true;
+                running = 0;
+                runningAfter = 0;
+                resultText = this.tf('results.lose');
+                resultClass = 'lose';
+              }
+            } else if (choice === 'low') {
+              if (lowProbability <= 0) {
+                busted = true;
+                running = 0;
+                runningAfter = 0;
+                resultText = this.tf('results.lowDisabled');
+                resultClass = 'invalid';
+              } else if (next < current) {
+                stepMultiplier = lowMultiplier;
+                running = running * stepMultiplier;
+                runningAfter = running;
+                resultText = this.tf('results.win');
+                resultClass = 'win';
+              } else if (next === current) {
+                busted = true;
+                running = 0;
+                runningAfter = 0;
+                resultText = this.tf('results.loseTie');
+                resultClass = 'lose';
+              } else {
+                busted = true;
+                running = 0;
+                runningAfter = 0;
+                resultText = this.tf('results.lose');
+                resultClass = 'lose';
+              }
+            }
+
+            rows.push({
+              index: i + 1,
+              current: current,
+              currentLabel: currentRow.label,
+              next: next,
+              nextLabel: nextRow.label,
+              highProbability: highProbability,
+              highMultiplier: highMultiplier,
+              lowProbability: lowProbability,
+              lowMultiplier: lowMultiplier,
+              choiceLabel: choiceLabel,
+              choiceClass: choice === 'invalid' ? '' : choice,
+              resultText: resultText,
+              resultClass: resultClass,
+              stepMultiplier: stepMultiplier,
+              runningAfter: runningAfter,
+            });
+          }
+
+          return rows;
+        },
+        pathSummaryTitle: function () {
+          if (!this.parsedChoices.length) return this.tf('path.noPathTitle');
+          if (!this.transitionRows.length) return this.tf('path.insufficientTitle');
+
+          for (var i = 0; i < this.transitionRows.length; i += 1) {
+            if (this.transitionRows[i].resultClass === 'lose' || this.transitionRows[i].resultClass === 'invalid') {
+              return this.tf('path.failureStep', { step: this.transitionRows[i].index });
+            }
+          }
+
+          var lastRunning = 1;
+          for (var j = 0; j < this.transitionRows.length; j += 1) {
+            if (this.transitionRows[j].choiceLabel !== this.copy.choiceLabels.empty) {
+              lastRunning = this.transitionRows[j].runningAfter;
+            }
+          }
+
+          return this.tf('path.currentTotal', { value: this.formatMultiplier(lastRunning) });
+        },
+        pathSummaryText: function () {
+          if (!this.parsedChoices.length) {
+            return this.tf('path.noPathText');
+          }
+
+          if (this.parsedChoices.length > this.maxChoiceCount) {
+            return this.tf('path.overflowText');
+          }
+
+          if (this.parsedChoices.length < this.maxChoiceCount) {
+            return this.tf('path.shortText', { count: this.parsedChoices.length });
+          }
+
+          return this.tf('path.fullText');
+        },
+        pathSummaryClass: function () {
+          if (!this.parsedChoices.length) return '';
+          for (var i = 0; i < this.transitionRows.length; i += 1) {
+            if (this.transitionRows[i].resultClass === 'lose' || this.transitionRows[i].resultClass === 'invalid') {
+              return 'bad';
+            }
+          }
+          return 'good';
+        },
+      },
+      watch: {
+        lang: function () {
+          this.syncMeta();
+        },
+      },
+      mounted: function () {
+        this.syncMeta();
+      },
+      methods: {
+        getText: function (key) {
+          var parts = key.split('.');
+          var value = this.copy;
+          for (var i = 0; i < parts.length; i += 1) {
+            if (value == null) return '';
+            value = value[parts[i]];
+          }
+          return value;
+        },
+        tf: function (key, params) {
+          var value = this.getText(key);
+          if (typeof value !== 'string') return value || '';
+          return value.replace(/\{(\w+)\}/g, function (match, token) {
+            return Object.prototype.hasOwnProperty.call(params || {}, token) ? params[token] : '';
+          });
+        },
+        syncMeta: function () {
+          document.title = this.copy.pageTitle;
+          document.documentElement.lang = this.lang;
+        },
+        setLanguage: function (lang) {
+          this.lang = lang === 'es' ? 'es' : 'en';
+          var url = new URL(window.location.href);
+          url.searchParams.set('lang', this.lang);
+          window.history.replaceState({}, '', url.toString());
+        },
+        cardLabel: function (card) {
+          var map = {
+            1: 'A',
+            11: 'J',
+            12: 'Q',
+            13: 'K',
+          };
+          return map[card] || String(card);
+        },
+        normalizeChoice: function (value) {
+          var lower = String(value).trim().toLowerCase();
+          if (!lower) return '';
+          if (
+            lower === 'h' ||
+            lower === 'high' ||
+            lower === 'up' ||
+            lower === 'big' ||
+            lower === 'alto' ||
+            lower === 'alta' ||
+            lower === '大' ||
+            lower === '高'
+          ) return 'high';
+          if (
+            lower === 'l' ||
+            lower === 'low' ||
+            lower === 'down' ||
+            lower === 'small' ||
+            lower === 'bajo' ||
+            lower === 'baja' ||
+            lower === '小' ||
+            lower === '低'
+          ) return 'low';
+          if (
+            lower === 's' ||
+            lower === 'skip' ||
+            lower === 'pass' ||
+            lower === 'saltar' ||
+            lower === 'omitir' ||
+            lower === 'pasar' ||
+            lower === '跳过'
+          ) return 'skip';
+          return 'invalid';
+        },
+        choiceDisplay: function (choice) {
+          if (!choice) return this.copy.choiceLabels.empty;
+          if (choice === 'high') return this.copy.choiceLabels.high;
+          if (choice === 'low') return this.copy.choiceLabels.low;
+          if (choice === 'skip') return this.copy.choiceLabels.skip;
+          return this.copy.choiceLabels.invalid;
+        },
+        formatPercent: function (value) {
+          if (!Number.isFinite(value)) return this.copy.common.na;
+          return (value * 100).toFixed(2) + '%';
+        },
+        formatMultiplier: function (value) {
+          if (!Number.isFinite(value)) return this.copy.common.na;
+          return Number(value).toFixed(4) + 'x';
+        },
+      },
+    });
+  </script>
+</body>
+
+</html>
