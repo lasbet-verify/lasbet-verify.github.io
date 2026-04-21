@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="./lib/bootstrap.min.css">
   <script src="./lib/vue.min.js"></script>
   <script src="./lib/crypto-js.js"></script>
+  <script src="./lib/hilo-verifier-core.js"></script>
   <style>
     :root {
       --bg: #f6f1e8;
@@ -728,31 +729,42 @@
 
   <script>
     var query = new URLSearchParams(window.location.search);
+    var initialState = window.HiloVerifierCore && window.HiloVerifierCore.parseQueryParams
+      ? window.HiloVerifierCore.parseQueryParams(window.location.search)
+      : {
+        lang: query.get('lang') === 'es' ? 'es' : 'en',
+        serverSeed: query.get('s') || '',
+        serverSeedHash: query.get('h') || '',
+        clientSeed: query.get('c') || '',
+        nonceStart: query.get('n') || query.get('nonce') || '0',
+        stepCount: Number.parseInt(query.get('steps'), 10) || 0,
+        choiceText: query.get('choices') || query.get('path') || '',
+      };
 
     new Vue({
       el: '#app',
       data: {
-        lang: query.get('lang') === 'es' ? 'es' : 'en',
-        server_seed: query.get('s') || '',
-        server_seed_hash: query.get('h') || '',
-        client_seed: query.get('c') || '',
-        nonce_start: query.get('n') || query.get('nonce') || '0',
-        steps: query.get('steps') || '1',
-        choice_text: query.get('choices') || query.get('path') || '',
+        lang: initialState.lang,
+        server_seed: initialState.serverSeed,
+        server_seed_hash: initialState.serverSeedHash,
+        client_seed: initialState.clientSeed,
+        nonce_start: initialState.nonceStart,
+        steps: String(initialState.stepCount || 0),
+        choice_text: initialState.choiceText,
         rtp_input: query.get('rtp') || '0.96',
         i18n: {
           en: {
             pageTitle: 'Hilo Verification Page',
             eyebrow: 'Provably Fair Verifier',
             heroTitle: 'Hilo Verification Page',
-            heroBody: 'This page follows your gameplay and provably fair specifications and supports <strong>single-point verification</strong> and <strong>full-round reconstruction</strong>. The core random logic is fixed to <code>HMAC_SHA256(clientSeed:nonce, serverSeed)</code>. Each card consumes 1 nonce, and a full round is uniquely determined by <code>nonceStart + steps</code>.',
+            heroBody: 'This page follows your gameplay and provably fair specifications and supports <strong>single-point verification</strong> and <strong>full-round reconstruction</strong>. The core random logic is fixed to <code>HMAC_SHA256(serverSeed, clientSeed:nonce)</code>. The opening card uses <code>nonceStart</code>, and the verifier consumes exactly <code>steps</code> consecutive nonces to rebuild the round.',
             heroBullets: [
               '<strong>Card mapping:</strong> <code>card = (int(hash[0:8], 16) % 13) + 1</code>',
               '<strong>Edge rule:</strong> LOW is disabled when the current card is A, and HIGH is disabled when the current card is K',
               '<strong>Standard judgement:</strong> HIGH requires <code>next &gt; current</code>, LOW requires <code>next &lt; current</code>, and ties lose',
             ],
             calloutTitle: 'Fields the verifier should show',
-            calloutBody: 'Server Seed Hash, Client Seed, nonce start, steps, the reconstructed full card sequence, and the probability and multiplier for each High / Low step. This lets users verify both randomness and whether the round path follows the rules.',
+            calloutBody: 'Server Seed Hash, Client Seed, nonce start, step count, the reconstructed full card sequence, and the probability and multiplier for each High / Low step. This lets users verify both randomness and whether the round path follows the rules.',
             sectionLabels: {
               input: 'Input',
               rules: 'Rules',
@@ -794,7 +806,7 @@
               serverSeedHash: 'SHA256(serverSeed) shown before the round starts',
               clientSeed: 'Player client seed',
               nonceStart: 'Nonce for a single card, or the start nonce of a round',
-              steps: 'Optional. Use values greater than 1 to reconstruct a full round',
+              steps: 'Optional. Enter the number of cards/nonces in the round, including the opening card',
               choices: 'Enter high, low, skip in order, for example: low, high, skip',
             },
             smallNote: 'Used to verify a round path. If left empty, the page only reconstructs the card sequence and the probability of each step.',
@@ -841,7 +853,7 @@
               mismatch: 'Server Seed Hash does not match',
             },
             single: {
-              hmacLabel: 'hmac_sha256(clientSeed:nonce, serverSeed)',
+              hmacLabel: 'hmac_sha256(serverSeed, clientSeed:nonce)',
               numFormula: '<code>num = parseInt(hash.substring(0, 8), 16)</code> = <code>{num}</code>',
               cardFormula: '<code>card = (num % 13) + 1</code> = <code>{card}</code>, displayed as <code>{label}</code>',
             },
@@ -871,15 +883,15 @@
               failureStep: 'Failed on step {step}',
               currentTotal: 'Current total multiplier {value}',
               noPathText: 'The page has already reconstructed the full card sequence from the nonce range. To validate a specific round path, enter the High / Low / Skip sequence.',
-              overflowText: 'You entered more choices than the available steps. Extra choices are ignored. Because steps is the number of cards, there can be at most steps - 1 High / Low / Skip decisions.',
+              overflowText: 'You entered more choices than the available steps. Extra choices are ignored. Because steps is the number of cards, there can be at most steps - 1 High / Low / Skip choices.',
               shortText: 'Only the first {count} choices are being validated right now. Fill in the remaining steps if you want a complete path verification.',
-              fullText: 'The number of entered choices matches the round length, and the page has completed step-by-step verification under the standard rule.',
+              fullText: 'The number of entered choices matches the available High / Low / Skip transitions, and the page has completed step-by-step verification under the standard rule.',
             },
             formula: {
               fairnessTitle: 'Provably Fair Randomness',
               fairnessList: [
                 '<code>message = clientSeed + ":" + nonce</code>',
-                '<code>hash = HMAC_SHA256(message, serverSeed)</code>',
+                '<code>hash = HMAC_SHA256(serverSeed, message)</code>',
                 '<code>num = parseInt(hash.substring(0, 8), 16)</code>',
                 '<code>card = (num % 13) + 1</code>',
               ],
@@ -927,14 +939,14 @@
             pageTitle: 'Página de verificación de Hilo',
             eyebrow: 'Verificador Provably Fair',
             heroTitle: 'Página de verificación de Hilo',
-            heroBody: 'Esta página sigue las especificaciones de jugabilidad y de Provably Fair que compartiste y soporta <strong>verificación puntual</strong> y <strong>reconstrucción de la ronda completa</strong>. La lógica aleatoria central está fijada en <code>HMAC_SHA256(clientSeed:nonce, serverSeed)</code>. Cada carta consume 1 nonce y una ronda completa queda determinada de forma única por <code>nonceStart + steps</code>.',
+            heroBody: 'Esta página sigue las especificaciones de jugabilidad y de Provably Fair que compartiste y soporta <strong>verificación puntual</strong> y <strong>reconstrucción de la ronda completa</strong>. La lógica aleatoria central está fijada en <code>HMAC_SHA256(serverSeed, clientSeed:nonce)</code>. La carta inicial usa <code>nonceStart</code> y el verificador consume exactamente <code>steps</code> nonces consecutivos para reconstruir la ronda.',
             heroBullets: [
               '<strong>Mapeo de carta:</strong> <code>card = (int(hash[0:8], 16) % 13) + 1</code>',
               '<strong>Regla de borde:</strong> LOW se desactiva cuando la carta actual es A y HIGH se desactiva cuando la carta actual es K',
               '<strong>Regla estándar:</strong> HIGH requiere <code>next &gt; current</code>, LOW requiere <code>next &lt; current</code> y el empate pierde',
             ],
             calloutTitle: 'Campos que debe mostrar el verificador',
-            calloutBody: 'Hash de la semilla del servidor, semilla del cliente, nonce inicial, pasos, la secuencia completa de cartas reconstruida y la probabilidad y el multiplicador de cada paso Alta / Baja. Así el usuario puede verificar tanto la aleatoriedad como si la ruta de la ronda sigue las reglas.',
+            calloutBody: 'Hash de la semilla del servidor, semilla del cliente, nonce inicial, cantidad de pasos, la secuencia completa de cartas reconstruida y la probabilidad y el multiplicador de cada paso Alta / Baja. Así el usuario puede verificar tanto la aleatoriedad como si la ruta de la ronda sigue las reglas.',
             sectionLabels: {
               input: 'Entrada',
               rules: 'Reglas',
@@ -976,7 +988,7 @@
               serverSeedHash: 'SHA256(serverSeed) mostrado antes de empezar la ronda',
               clientSeed: 'Client seed del jugador',
               nonceStart: 'Nonce para una sola carta o nonce inicial de una ronda',
-              steps: 'Opcional. Usa valores mayores que 1 para reconstruir una ronda completa',
+              steps: 'Opcional. Introduce la cantidad de cartas/nonces de la ronda, incluyendo la carta inicial',
               choices: 'Escribe high, low, skip o alta, baja, saltar en orden; por ejemplo: low, high, skip',
             },
             smallNote: 'Se usa para verificar la ruta de una ronda. Si se deja vacío, la página solo reconstruye la secuencia de cartas y la probabilidad de cada paso.',
@@ -1023,7 +1035,7 @@
               mismatch: 'El hash de la semilla del servidor no coincide',
             },
             single: {
-              hmacLabel: 'hmac_sha256(clientSeed:nonce, serverSeed)',
+              hmacLabel: 'hmac_sha256(serverSeed, clientSeed:nonce)',
               numFormula: '<code>num = parseInt(hash.substring(0, 8), 16)</code> = <code>{num}</code>',
               cardFormula: '<code>card = (num % 13) + 1</code> = <code>{card}</code>, mostrado como <code>{label}</code>',
             },
@@ -1053,15 +1065,15 @@
               failureStep: 'Falló en el paso {step}',
               currentTotal: 'Multiplicador total actual {value}',
               noPathText: 'La página ya reconstruyó la secuencia completa de cartas a partir del rango de nonce. Para validar una ruta específica de la ronda, introduce la secuencia Alta / Baja / Saltar.',
-              overflowText: 'Ingresaste más elecciones de las que permiten los pasos disponibles. Las elecciones extra se ignoran. Como pasos es el número de cartas, puede haber como máximo pasos - 1 decisiones Alta / Baja / Saltar.',
+              overflowText: 'Ingresaste más elecciones de las que permiten los pasos disponibles. Las elecciones extra se ignoran. Como steps es el número de cartas, puede haber como máximo steps - 1 decisiones Alta / Baja / Saltar.',
               shortText: 'Por ahora solo se validan las primeras {count} elecciones. Completa los pasos restantes si quieres una validación completa de la ruta.',
-              fullText: 'La cantidad de elecciones ingresadas coincide con la longitud de la ronda y la página ya completó la verificación paso a paso con la regla estándar.',
+              fullText: 'La cantidad de elecciones ingresadas coincide con las transiciones Alta / Baja / Saltar disponibles y la página ya completó la verificación paso a paso con la regla estándar.',
             },
             formula: {
               fairnessTitle: 'Aleatoriedad Provably Fair',
               fairnessList: [
                 '<code>message = clientSeed + ":" + nonce</code>',
-                '<code>hash = HMAC_SHA256(message, serverSeed)</code>',
+                '<code>hash = HMAC_SHA256(serverSeed, message)</code>',
                 '<code>num = parseInt(hash.substring(0, 8), 16)</code>',
                 '<code>card = (num % 13) + 1</code>',
               ],
@@ -1121,6 +1133,9 @@
           if (value > 200) return 200;
           return value;
         },
+        cardCount: function () {
+          return this.normalizedSteps;
+        },
         normalizedRtp: function () {
           var value = Number.parseFloat(this.rtp_input);
           if (!Number.isFinite(value) || value <= 0 || value > 1) return 0.96;
@@ -1145,7 +1160,7 @@
         sequence: function () {
           if (!this.server_seed || !this.client_seed) return [];
           var rows = [];
-          for (var i = 0; i < this.normalizedSteps; i += 1) {
+          for (var i = 0; i < this.cardCount; i += 1) {
             var nonce = this.normalizedNonceStart + i;
             var message = this.client_seed + ':' + nonce;
             var hash = CryptoJS.HmacSHA256(message, this.server_seed).toString();
@@ -1173,14 +1188,16 @@
         },
         nonceRangeText: function () {
           if (!this.sequence.length) return this.copy.common.na;
-          return this.normalizedNonceStart + ' ~ ' + (this.normalizedNonceStart + this.normalizedSteps - 1);
+          return this.normalizedNonceStart + ' ~ ' + (this.normalizedNonceStart + this.cardCount - 1);
         },
         parsedChoices: function () {
           if (!this.choice_text) return [];
-          var tokens = String(this.choice_text)
-            .split(/[\s,，|/]+/)
-            .map(function (item) { return item.trim(); })
-            .filter(Boolean);
+          var tokens = window.HiloVerifierCore && window.HiloVerifierCore.splitChoiceTokens
+            ? window.HiloVerifierCore.splitChoiceTokens(this.choice_text)
+            : String(this.choice_text)
+              .split(/[\s,，|/]+/)
+              .map(function (item) { return item.trim(); })
+              .filter(Boolean);
 
           return tokens.map(function (token, index) {
             return {
@@ -1211,8 +1228,12 @@
             var next = nextRow.card;
             var highProbability = (13 - current) / 13;
             var lowProbability = (current - 1) / 13;
-            var highMultiplier = highProbability > 0 ? this.normalizedRtp / highProbability : null;
-            var lowMultiplier = lowProbability > 0 ? this.normalizedRtp / lowProbability : null;
+            var highMultiplierRaw = highProbability > 0 ? this.normalizedRtp / highProbability : null;
+            var lowMultiplierRaw = lowProbability > 0 ? this.normalizedRtp / lowProbability : null;
+            var highMultiplier =
+              highMultiplierRaw != null ? this.truncate2(highMultiplierRaw) : null;
+            var lowMultiplier =
+              lowMultiplierRaw != null ? this.truncate2(lowMultiplierRaw) : null;
             var choice = this.parsedChoices[i] ? this.parsedChoices[i].normalized : '';
             var choiceLabel = this.choiceDisplay(choice);
             var stepMultiplier = null;
@@ -1244,7 +1265,7 @@
                 resultClass = 'invalid';
               } else if (next > current) {
                 stepMultiplier = highMultiplier;
-                running = running * stepMultiplier;
+                running = this.truncate2(running * highMultiplierRaw);
                 runningAfter = running;
                 resultText = this.tf('results.win');
                 resultClass = 'win';
@@ -1270,7 +1291,7 @@
                 resultClass = 'invalid';
               } else if (next < current) {
                 stepMultiplier = lowMultiplier;
-                running = running * stepMultiplier;
+                running = this.truncate2(running * lowMultiplierRaw);
                 runningAfter = running;
                 resultText = this.tf('results.win');
                 resultClass = 'win';
@@ -1399,6 +1420,10 @@
           return map[card] || String(card);
         },
         normalizeChoice: function (value) {
+          if (window.HiloVerifierCore && window.HiloVerifierCore.normalizeChoice) {
+            return window.HiloVerifierCore.normalizeChoice(value);
+          }
+
           var lower = String(value).trim().toLowerCase();
           if (!lower) return '';
           if (
@@ -1443,9 +1468,14 @@
           if (!Number.isFinite(value)) return this.copy.common.na;
           return (value * 100).toFixed(2) + '%';
         },
+        truncate2: function (value) {
+          var normalized = Number(value) || 0;
+          return Math.trunc(Number((normalized * 100).toFixed(8))) / 100;
+        },
         formatMultiplier: function (value) {
           if (!Number.isFinite(value)) return this.copy.common.na;
-          return Number(value).toFixed(4) + 'x';
+          var normalized = this.truncate2(value);
+          return (Number.isInteger(normalized) ? normalized.toFixed(0) : normalized.toFixed(2)) + 'x';
         },
       },
     });
