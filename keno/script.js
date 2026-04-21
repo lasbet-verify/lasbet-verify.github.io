@@ -202,7 +202,6 @@
 
   const elements = {
     form: document.querySelector('#verifierForm'),
-    verifyButton: document.querySelector('#verifyButton'),
     serverSeedInput: document.querySelector('#serverSeedInput'),
     clientSeedInput: document.querySelector('#clientSeedInput'),
     nonceInput: document.querySelector('#nonceInput'),
