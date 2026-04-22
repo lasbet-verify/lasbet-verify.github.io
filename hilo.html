@@ -194,6 +194,13 @@
       box-shadow: 0 0 0 4px rgba(181, 90, 42, 0.1);
     }
 
+    .field input[readonly],
+    .field textarea[readonly] {
+      background: rgba(246, 239, 228, 0.9);
+      color: var(--text);
+      cursor: default;
+    }
+
     .field textarea {
       min-height: 96px;
     }
@@ -376,17 +383,12 @@
       overflow: hidden;
     }
 
-    .advanced-toggle summary {
-      cursor: pointer;
+    .advanced-title {
       list-style: none;
       padding: 14px 16px;
       font-weight: 700;
       color: var(--text);
       background: rgba(90, 67, 36, 0.04);
-    }
-
-    .advanced-toggle summary::-webkit-details-marker {
-      display: none;
     }
 
     .advanced-body {
@@ -465,28 +467,32 @@
               <input id="nonce-start" v-model.trim="nonce_start" :placeholder="copy.placeholders.nonceStart">
             </div>
           </div>
-          <details class="advanced-toggle">
-            <summary>{{ copy.advanced.title }}</summary>
+          <div class="advanced-toggle">
+            <div class="advanced-title">{{ copy.advanced.title }}</div>
             <div class="advanced-body">
               <div class="form-grid">
                 <div class="field">
+                  <label for="bet-id">{{ copy.fields.betId }}</label>
+                  <input id="bet-id" v-model.trim="bet_id" :placeholder="copy.placeholders.betId" readonly>
+                </div>
+                <div class="field">
                   <label for="server-seed-hash">{{ copy.fields.serverSeedHash }}</label>
                   <input id="server-seed-hash" v-model.trim="server_seed_hash"
-                    :placeholder="copy.placeholders.serverSeedHash">
+                    :placeholder="copy.placeholders.serverSeedHash" readonly>
                 </div>
                 <div class="field">
                   <label for="steps">{{ copy.fields.steps }}</label>
-                  <input id="steps" v-model.trim="steps" :placeholder="copy.placeholders.steps">
+                  <input id="steps" v-model.trim="steps" :placeholder="copy.placeholders.steps" readonly>
                 </div>
                 <div class="field">
                   <label for="choice-text">{{ copy.fields.choices }}</label>
                   <textarea id="choice-text" v-model.trim="choice_text"
-                    :placeholder="copy.placeholders.choices"></textarea>
+                    :placeholder="copy.placeholders.choices" readonly></textarea>
                   <div class="small-note">{{ copy.advanced.description }}</div>
                 </div>
               </div>
             </div>
-          </details>
+          </div>
         </section>
 
         <section class="panel">
@@ -737,6 +743,7 @@
         serverSeedHash: query.get('h') || '',
         clientSeed: query.get('c') || '',
         nonceStart: query.get('n') || query.get('nonce') || '0',
+        roundId: query.get('i') || query.get('transaction_id') || query.get('round_id') || query.get('id') || '',
         stepCount: Number.parseInt(query.get('steps'), 10) || 0,
         choiceText: query.get('choices') || query.get('path') || '',
       };
@@ -749,6 +756,7 @@
         server_seed_hash: initialState.serverSeedHash,
         client_seed: initialState.clientSeed,
         nonce_start: initialState.nonceStart,
+        bet_id: initialState.roundId || '',
         steps: String(initialState.stepCount || 0),
         choice_text: initialState.choiceText,
         rtp_input: query.get('rtp') || '0.96',
@@ -798,6 +806,7 @@
               serverSeedHash: 'Server Seed Hash',
               clientSeed: 'Client Seed',
               nonceStart: 'Nonce',
+              betId: 'Bet ID',
               steps: 'Steps',
               choices: 'Choice Path (Optional)',
             },
@@ -806,6 +815,7 @@
               serverSeedHash: 'SHA256(serverSeed) shown before the round starts',
               clientSeed: 'Player client seed',
               nonceStart: 'Nonce for a single card, or the start nonce of a round',
+              betId: 'Loaded from the verify link',
               steps: 'Optional. Enter the number of cards/nonces in the round, including the opening card',
               choices: 'Enter high, low, skip in order, for example: low, high, skip',
             },
@@ -980,6 +990,7 @@
               serverSeedHash: 'Hash de la semilla del servidor',
               clientSeed: 'Semilla del cliente',
               nonceStart: 'Nonce',
+              betId: 'Bet ID',
               steps: 'Pasos',
               choices: 'Ruta de elecciones (opcional)',
             },
@@ -988,6 +999,7 @@
               serverSeedHash: 'SHA256(serverSeed) mostrado antes de empezar la ronda',
               clientSeed: 'Client seed del jugador',
               nonceStart: 'Nonce para una sola carta o nonce inicial de una ronda',
+              betId: 'Cargado desde el enlace de verificación',
               steps: 'Opcional. Introduce la cantidad de cartas/nonces de la ronda, incluyendo la carta inicial',
               choices: 'Escribe high, low, skip o alta, baja, saltar en orden; por ejemplo: low, high, skip',
             },
