@@ -452,7 +452,7 @@
               <h2>{{ copy.headings.inputs }}</h2>
             </div>
           </div>
-          <p class="input-helper">{{ copy.inputHelper }}</p>
+          <p class="input-helper" v-html="copy.inputHelper"></p>
           <div class="form-grid">
             <div class="field">
               <label for="server-seed">{{ copy.fields.serverSeed }}</label>
