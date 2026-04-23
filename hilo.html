@@ -462,10 +462,6 @@
               <label for="client-seed">{{ copy.fields.clientSeed }}</label>
               <input id="client-seed" v-model.trim="client_seed" :placeholder="copy.placeholders.clientSeed">
             </div>
-            <div class="field">
-              <label for="nonce-start">{{ copy.fields.nonceStart }}</label>
-              <input id="nonce-start" v-model.trim="nonce_start" :placeholder="copy.placeholders.nonceStart">
-            </div>
           </div>
           <div class="advanced-toggle">
             <div class="advanced-title">{{ copy.advanced.title }}</div>
@@ -479,6 +475,11 @@
                   <label for="server-seed-hash">{{ copy.fields.serverSeedHash }}</label>
                   <input id="server-seed-hash" v-model.trim="server_seed_hash"
                     :placeholder="copy.placeholders.serverSeedHash" readonly>
+                </div>
+                <div class="field">
+                  <label for="nonce-start">{{ copy.fields.nonceStart }}</label>
+                  <input id="nonce-start" v-model.trim="nonce_start" :placeholder="copy.placeholders.nonceStart"
+                    readonly>
                 </div>
                 <div class="field">
                   <label for="steps">{{ copy.fields.steps }}</label>
@@ -796,7 +797,7 @@
               formula: 'Core Formula',
               notes: 'Page Notes',
             },
-            inputHelper: 'For the minimum verification flow, you only need <strong>server seed</strong>, <strong>client seed</strong>, and <strong>nonce</strong>. The advanced section is only needed for hash matching, full-round reconstruction, or multiplier/path checks.',
+            inputHelper: 'For the minimum verification flow, you only need <strong>server seed</strong> and <strong>client seed</strong>. The preset <strong>nonce</strong> and other advanced fields are shown in the advanced section for reference.',
             advanced: {
               title: 'Advanced Options',
               description: 'Use these only when you need to compare the server-seed hash, reconstruct a full round with multiple cards, or validate the choice path.',
@@ -980,7 +981,7 @@
               formula: 'Fórmulas clave',
               notes: 'Notas de la página',
             },
-            inputHelper: 'Para el flujo mínimo de verificación solo necesitas <strong>semilla del servidor</strong>, <strong>semilla del cliente</strong> y <strong>nonce</strong>. La sección avanzada solo hace falta para comparar el hash, reconstruir una ronda completa o validar multiplicadores y rutas.',
+            inputHelper: 'Para el flujo mínimo de verificación solo necesitas <strong>semilla del servidor</strong> y <strong>semilla del cliente</strong>. El <strong>nonce</strong> predefinido y los demás campos avanzados se muestran en la sección avanzada como referencia.',
             advanced: {
               title: 'Opciones avanzadas',
               description: 'Úsalas solo si necesitas comparar el hash de la semilla del servidor, reconstruir una ronda completa con varias cartas o validar la ruta de elecciones.',
