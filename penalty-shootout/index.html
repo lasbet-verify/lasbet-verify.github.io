@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lasbet Provably Fair Penalty Verifier</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero-card surface">
+        <div class="hero-copy">
+          <h1 data-i18n="heroTitle"></h1>
+          <p data-i18n-html="heroDescription"></p>
+        </div>
+        <div class="hero-note">
+          <strong data-i18n="heroAsideTitle"></strong>
+          <p data-i18n-html="heroAsideBody"></p>
+        </div>
+      </section>
+      <section class="content-grid">
+        <section class="surface panel">
+          <div class="panel-head"><h2 data-i18n="inputTitle"></h2></div>
+          <form class="input-form" id="verifierForm">
+            <label class="field">
+              <span data-i18n="serverSeedLabel"></span>
+              <textarea
+                id="serverSeedInput"
+                rows="4"
+                spellcheck="false"
+                data-i18n-placeholder="serverSeedPlaceholder"
+              ></textarea>
+            </label>
+            <label class="field">
+              <span data-i18n="clientSeedLabel"></span>
+              <input
+                id="clientSeedInput"
+                type="text"
+                data-i18n-placeholder="clientSeedPlaceholder"
+              />
+            </label>
+            <label class="field">
+              <span data-i18n="nonceLabel"></span>
+              <input id="nonceInput" type="number" min="0" step="1" />
+            </label>
+            <label class="field">
+              <span data-i18n="roundIndexLabel"></span>
+              <input id="roundIndexInput" type="number" min="0" step="1" />
+            </label>
+            <label class="field">
+              <span data-i18n="modeLabel"></span>
+              <select id="modeInput">
+                <option value="2" data-i18n="mode2Label"></option>
+                <option value="3" data-i18n="mode3Label"></option>
+                <option value="5" data-i18n="mode5Label"></option>
+              </select>
+            </label>
+            <label class="field">
+              <span data-i18n="playerDirectionLabel"></span>
+              <select id="playerDirectionInput"></select>
+            </label>
+            <div class="button-row">
+              <button
+                type="button"
+                class="secondary-button"
+                id="copyStepsButton"
+                data-i18n="copyButton"
+              ></button>
+            </div>
+          </form>
+        </section>
+        <section class="surface panel result-panel">
+          <div class="panel-head">
+            <h2 data-i18n="resultTitle"></h2>
+            <span class="status-pill" id="statusPill"></span>
+          </div>
+          <div class="visual-grid" id="visualGrid"></div>
+          <div class="meta-grid" id="metaGrid"></div>
+          <div class="formula-box" id="formulaBox"></div>
+          <div class="steps-block">
+            <div class="steps-head">
+              <h3 data-i18n="stepsTitle"></h3>
+              <span data-i18n="stepsHint"></span>
+            </div>
+            <ol class="steps-list" id="stepsList"></ol>
+          </div>
+          <button
+            type="button"
+            class="lang-button is-active"
+            id="langToggleButton"
+          ></button>
+        </section>
+      </section>
+    </main>
+    <script src="./script.js"></script>
+  </body>
+</html>
