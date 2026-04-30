@@ -298,8 +298,65 @@ function parseNonNegativeInteger(value, errorKey, emptyKey) {
   return Number(value.trim());
 }
 
+function firstDefined(...values) {
+  return values.find((value) => value != null && value !== "");
+}
+
+function normalizeMode(value) {
+  const mode = String(value || "").trim();
+  return GAME_CONFIG.directionMap[mode] ? mode : GAME_CONFIG.demo.mode;
+}
+
 function getDirectionOptions(mode) {
-  return GAME_CONFIG.directionMap[mode];
+  return GAME_CONFIG.directionMap[normalizeMode(mode)];
+}
+
+function normalizeDirectionValue(value) {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function normalizeDirectionIndex(value, mode) {
+  const rawValue = String(value == null ? "" : value).trim();
+  if (!rawValue) return "";
+
+  const options = getDirectionOptions(mode);
+  if (/^\d+$/.test(rawValue)) {
+    return options[Number(rawValue)] ? rawValue : "0";
+  }
+
+  const directionIndex = options.indexOf(normalizeDirectionValue(rawValue));
+  return directionIndex >= 0 ? String(directionIndex) : "0";
+}
+
+function parseQueryParams(search) {
+  const params = new URLSearchParams(search || "");
+  const mode = normalizeMode(firstDefined(params.get("m"), params.get("mode")));
+  const directionRaw = firstDefined(
+    params.get("d"),
+    params.get("direction"),
+    params.get("player_direction"),
+    params.get("playerDirection"),
+    params.get("player")
+  );
+
+  return {
+    lang: params.get("lang") === "es" ? "es" : DEFAULT_LANG,
+    serverSeed: firstDefined(params.get("s"), params.get("server_seed"), params.get("serverSeed")) || "",
+    clientSeed: firstDefined(params.get("c"), params.get("client_seed"), params.get("clientSeed")) || "",
+    nonce: firstDefined(params.get("n"), params.get("nonce")) || "",
+    roundIndex:
+      firstDefined(
+        params.get("r"),
+        params.get("round_index"),
+        params.get("roundIndex"),
+        params.get("round")
+      ) || "",
+    mode,
+    playerDirection: normalizeDirectionIndex(directionRaw, mode),
+  };
 }
 
 function syncDirectionOptions() {
@@ -313,8 +370,10 @@ function syncDirectionOptions() {
     node.textContent = option;
     elements.playerDirectionInput.appendChild(node);
   });
-  if (options[Number(previousValue)]) {
+  if (previousValue !== "" && options[Number(previousValue)]) {
     elements.playerDirectionInput.value = previousValue;
+  } else {
+    elements.playerDirectionInput.value = "0";
   }
 }
 
@@ -511,6 +570,35 @@ function setLanguage(lang) {
   }
 }
 
+function applyInitialValues(initialState) {
+  const queryState = initialState || parseQueryParams(window.location.search);
+  const hasQueryOverrides =
+    queryState.serverSeed ||
+    queryState.clientSeed ||
+    queryState.nonce ||
+    queryState.roundIndex ||
+    queryState.mode ||
+    queryState.playerDirection;
+
+  elements.serverSeedInput.value = hasQueryOverrides && queryState.serverSeed
+    ? queryState.serverSeed
+    : GAME_CONFIG.demo.serverSeed;
+  elements.clientSeedInput.value = hasQueryOverrides && queryState.clientSeed
+    ? queryState.clientSeed
+    : GAME_CONFIG.demo.clientSeed;
+  elements.nonceInput.value = hasQueryOverrides && queryState.nonce
+    ? queryState.nonce
+    : GAME_CONFIG.demo.nonce;
+  elements.roundIndexInput.value = hasQueryOverrides && queryState.roundIndex
+    ? queryState.roundIndex
+    : GAME_CONFIG.demo.roundIndex;
+  elements.modeInput.value = hasQueryOverrides ? queryState.mode : GAME_CONFIG.demo.mode;
+  syncDirectionOptions();
+  elements.playerDirectionInput.value = hasQueryOverrides && queryState.playerDirection
+    ? queryState.playerDirection
+    : GAME_CONFIG.demo.playerDirection;
+}
+
 elements.form.addEventListener("submit", handleSubmit);
 elements.copyStepsButton.addEventListener("click", copySteps);
 elements.langToggleButton.addEventListener("click", () => {
@@ -531,14 +619,11 @@ elements.modeInput.addEventListener("change", () => {
   element.addEventListener("change", scheduleAutoVerify);
 });
 
-elements.serverSeedInput.value = GAME_CONFIG.demo.serverSeed;
-elements.clientSeedInput.value = GAME_CONFIG.demo.clientSeed;
-elements.nonceInput.value = GAME_CONFIG.demo.nonce;
-elements.roundIndexInput.value = GAME_CONFIG.demo.roundIndex;
-elements.modeInput.value = GAME_CONFIG.demo.mode;
+const initialState = parseQueryParams(window.location.search);
+currentLang = initialState.lang;
 applyStaticTranslations();
-elements.playerDirectionInput.value = GAME_CONFIG.demo.playerDirection;
 renderIdleState();
 setStatus("idle");
 elements.copyStepsButton.disabled = true;
+applyInitialValues(initialState);
 handleSubmit();
