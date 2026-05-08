@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Crash verify</title>
+  <link rel="stylesheet" href="./lib/main.css">
+  <link rel="stylesheet" href="./lib/bootstrap.min.css">
+  <script src="./lib/vue.min.js"></script>
+  <script src="./lib/crypto-js.js"></script>
+  <script src="./lib/crash-verifier-core.js"></script>
+  <style>
+    .main code,
+    .main .text-accent {
+      color: #ff255f;
+      word-break: break-all;
+    }
+
+    .main .formula-block {
+      font-size: 1.35rem;
+      line-height: 1.35;
+      margin-top: 24px;
+    }
+
+    .main .steps-list {
+      font-size: 1.25rem;
+      line-height: 1.3;
+      padding-left: 28px;
+    }
+
+    .main .form-control[readonly] {
+      background: #d8d8d8;
+    }
+
+    .main .hash-match {
+      margin-top: 8px;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+<div id="app" class="main">
+  <h1 class="text-center pb-5">Crash verify</h1>
+  <hr>
+
+  <form class="py-5">
+    <h2 class="text-center">Input</h2>
+    <div class="form-group">
+      <input
+        :value="server_seed"
+        @change="server_seed = $event.target.value"
+        class="form-control"
+        placeholder="Server Seed"
+      >
+    </div>
+    <div class="form-group">
+      <input
+        :value="round_id"
+        @change="round_id = $event.target.value"
+        class="form-control"
+        placeholder="Round ID / Nonce"
+      >
+    </div>
+  </form>
+
+  <hr>
+
+  <form class="py-5">
+    <h2 class="text-center pb-5">Output</h2>
+    <div class="form-group">
+      <label>sha256(server_seed)</label>
+      <input class="form-control" readonly :value="computed_server_seed_hash">
+      <div class="hash-match" v-if="server_seed_hash">
+        Server seed hash matched:
+        <strong :class="hashMatched ? 'text-success' : 'text-danger'">{{ hashMatched ? 'Yes' : 'No' }}</strong>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>sha256(server_seed:round_id)</label>
+      <input class="form-control" readonly :value="round_hash">
+    </div>
+    <div class="form-group">
+      <label>52 bit</label>
+      <input class="form-control" readonly :value="first52_bits">
+    </div>
+  </form>
+
+  <hr>
+
+  <form class="py-5">
+    <h2 class="text-center pb-5">Results</h2>
+    <div class="form-group">
+      <label>Final Result</label>
+      <input class="form-control" readonly :value="final_result">
+    </div>
+    <div class="form-group" v-if="submitted_result">
+      <label>Submitted Result</label>
+      <input class="form-control" readonly :value="submitted_result_display">
+      <div class="hash-match">
+        Result matched:
+        <strong :class="resultMatched ? 'text-success' : 'text-danger'">{{ resultMatched ? 'Yes' : 'No' }}</strong>
+      </div>
+    </div>
+
+    <div class="formula-block">
+      <strong>Calculation Formula:</strong>
+      <p>
+        r = int(first 52 bits of SHA-256(seed:round_id)) / 2^52<br>
+        multiplier = max(1.00, floor((0.99 / (1 - r)) * 100) / 100)
+      </p>
+    </div>
+
+    <h3 class="pt-5">Verification Steps:</h3>
+    <ol class="steps-list">
+      <li>
+        Concatenate the input string:<br>
+        <code>{{ input_string }}</code>
+      </li>
+      <li>
+        Compute SHA-256 to get the hash:<br>
+        <code>{{ round_hash }}</code>
+      </li>
+      <li>
+        Take the first 13 hexadecimal characters (equal to 52 bits):<br>
+        <code>{{ first52_bits }}</code>
+      </li>
+      <li>
+        Convert the 52-bit value from hexadecimal to a decimal integer:<br>
+        <code>{{ first52_integer_display }}</code>
+      </li>
+      <li>
+        Calculate the random value:<br>
+        <code>r = integer / 2^52 = {{ ratio_display }}</code>
+      </li>
+      <li>
+        Apply the formula 0.99 / (1 - r) to get the raw multiplier:<br>
+        <code>{{ raw_multiplier }}</code>
+      </li>
+      <li>
+        Round down to two decimal places (minimum 1.00):<br>
+        <code>{{ final_result }}</code>
+      </li>
+    </ol>
+  </form>
+</div>
+</body>
+<script>
+let qs = window.CrashVerifierCore.parseQueryParams()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    server_seed: qs.s || qs.server_seed || '',
+    server_seed_hash: qs.h || qs.server_seed_hash || '',
+    round_id: qs.n || qs.rid || qs.round_id || qs.roundId || '',
+    submitted_result: qs.r || qs.result || qs.crash_point || qs.bust_multiplier || '',
+  },
+  computed: {
+    verify_result() {
+      return window.CrashVerifierCore.computeCrash(this.server_seed, this.round_id)
+    },
+    input_string() {
+      return this.verify_result.inputString
+    },
+    computed_server_seed_hash() {
+      return this.verify_result.serverSeedHash
+    },
+    hashMatched() {
+      if (!this.server_seed_hash) return null
+      return String(this.server_seed_hash).toLowerCase() === this.computed_server_seed_hash
+    },
+    round_hash() {
+      return this.verify_result.roundHash
+    },
+    first52_bits() {
+      return this.verify_result.first52BitsHex
+    },
+    first52_integer_display() {
+      return this.verify_result.first52BitsFormatted
+    },
+    ratio_display() {
+      return this.verify_result.ratioDisplay
+    },
+    raw_multiplier() {
+      return this.verify_result.rawMultiplierDisplay
+    },
+    final_result() {
+      return this.verify_result.finalMultiplierDisplay
+    },
+    submitted_result_display() {
+      const normalized = Number(String(this.submitted_result || '').replace(/x$/i, ''))
+      if (!Number.isFinite(normalized)) return this.submitted_result
+      return window.CrashVerifierCore.formatMultiplier(normalized, 2)
+    },
+    resultMatched() {
+      const normalized = Number(String(this.submitted_result || '').replace(/x$/i, ''))
+      if (!Number.isFinite(normalized)) return false
+      return Math.abs(normalized - this.verify_result.finalMultiplier) < 0.000001
+    },
+  },
+})
+</script>
+</html>
