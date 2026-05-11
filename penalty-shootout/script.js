@@ -353,7 +353,7 @@ function parseQueryParams(search) {
         params.get("round_index"),
         params.get("roundIndex"),
         params.get("round")
-      ) || "",
+      ) || "0",
     mode,
     playerDirection: normalizeDirectionIndex(directionRaw, mode),
   };
@@ -576,7 +576,6 @@ function applyInitialValues(initialState) {
     queryState.serverSeed ||
     queryState.clientSeed ||
     queryState.nonce ||
-    queryState.roundIndex ||
     queryState.mode ||
     queryState.playerDirection;
 
@@ -589,9 +588,7 @@ function applyInitialValues(initialState) {
   elements.nonceInput.value = hasQueryOverrides && queryState.nonce
     ? queryState.nonce
     : GAME_CONFIG.demo.nonce;
-  elements.roundIndexInput.value = hasQueryOverrides && queryState.roundIndex
-    ? queryState.roundIndex
-    : GAME_CONFIG.demo.roundIndex;
+  elements.roundIndexInput.value = hasQueryOverrides ? queryState.roundIndex : GAME_CONFIG.demo.roundIndex;
   elements.modeInput.value = hasQueryOverrides ? queryState.mode : GAME_CONFIG.demo.mode;
   syncDirectionOptions();
   elements.playerDirectionInput.value = hasQueryOverrides && queryState.playerDirection
