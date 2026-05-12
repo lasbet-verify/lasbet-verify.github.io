@@ -1,95 +1,187 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lasbet Provably Fair Penalty Verifier</title>
+    <title>Penalty Verification Page</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="page-shell">
-      <section class="hero-card surface">
-        <div class="hero-copy">
-          <h1 data-i18n="heroTitle"></h1>
-          <p data-i18n-html="heroDescription"></p>
-        </div>
-        <div class="hero-note">
-          <strong data-i18n="heroAsideTitle"></strong>
-          <p data-i18n-html="heroAsideBody"></p>
+      <section class="hero">
+        <div class="hero-grid">
+          <div>
+            <span class="eyebrow" data-i18n="eyebrow"></span>
+            <h1 data-i18n="heroTitle"></h1>
+
+            <ul class="helper-list" id="heroList"></ul>
+          </div>
+          <div class="hero-callout">
+            <strong data-i18n="calloutTitle"></strong>
+            <p class="mb-0" data-i18n-html="calloutBody"></p>
+          </div>
         </div>
       </section>
+
       <section class="content-grid">
-        <section class="surface panel">
-          <div class="panel-head"><h2 data-i18n="inputTitle"></h2></div>
-          <form class="input-form" id="verifierForm">
-            <label class="field">
-              <span data-i18n="serverSeedLabel"></span>
-              <textarea
-                id="serverSeedInput"
-                rows="4"
-                spellcheck="false"
-                data-i18n-placeholder="serverSeedPlaceholder"
-              ></textarea>
-            </label>
-            <label class="field">
-              <span data-i18n="clientSeedLabel"></span>
-              <input
-                id="clientSeedInput"
-                type="text"
-                data-i18n-placeholder="clientSeedPlaceholder"
-              />
-            </label>
-            <label class="field">
-              <span data-i18n="nonceLabel"></span>
-              <input id="nonceInput" type="number" min="0" step="1" />
-            </label>
-            <label class="field">
-              <span data-i18n="roundIndexLabel"></span>
-              <input id="roundIndexInput" type="number" min="0" step="1" />
-            </label>
-            <label class="field">
-              <span data-i18n="modeLabel"></span>
-              <select id="modeInput">
-                <option value="2" data-i18n="mode2Label"></option>
-                <option value="3" data-i18n="mode3Label"></option>
-                <option value="5" data-i18n="mode5Label"></option>
-              </select>
-            </label>
-            <label class="field">
-              <span data-i18n="playerDirectionLabel"></span>
-              <select id="playerDirectionInput"></select>
-            </label>
-            <div class="button-row">
-              <button
-                type="button"
-                class="secondary-button"
-                id="copyStepsButton"
-                data-i18n="copyButton"
-              ></button>
+        <div>
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="section-label" data-i18n="inputSectionLabel"></div>
+                <h2 data-i18n="inputTitle"></h2>
+              </div>
             </div>
-          </form>
-        </section>
-        <section class="surface panel result-panel">
+            <p class="input-helper" data-i18n="inputHelper"></p>
+            <form class="form-grid" id="verifierForm">
+              <div class="field">
+                <label for="serverSeedInput" data-i18n="serverSeedLabel"></label>
+                <textarea
+                  id="serverSeedInput"
+                  rows="4"
+                  spellcheck="false"
+                  data-i18n-placeholder="serverSeedPlaceholder"
+                ></textarea>
+              </div>
+              <div class="field">
+                <label for="clientSeedInput" data-i18n="clientSeedLabel"></label>
+                <input
+                  id="clientSeedInput"
+                  type="text"
+                  data-i18n-placeholder="clientSeedPlaceholder"
+                />
+              </div>
+              <div class="button-row">
+                <button type="button" class="secondary-button" id="copyStepsButton" data-i18n="copyButton"></button>
+              </div>
+            </form>
+
+            <div class="advanced-toggle">
+              <div class="advanced-title" data-i18n="advancedTitle"></div>
+              <div class="advanced-body">
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="betIdOutput">Bet ID</label>
+                    <input id="betIdOutput" readonly />
+                  </div>
+                  <div class="field">
+                    <label for="serverSeedHashOutput">sha256(server_seed)</label>
+                    <input id="serverSeedHashOutput" readonly />
+                  </div>
+                  <div class="field">
+                    <label for="nonceOutput">Nonce</label>
+                    <input id="nonceOutput" readonly />
+                  </div>
+                  <div class="field">
+                    <label for="stepsOutput">Steps</label>
+                    <input id="stepsOutput" readonly />
+                  </div>
+                  <div class="field">
+                    <label for="hmacOutput">hmac_sha256</label>
+                    <textarea id="hmacOutput" readonly rows="4"></textarea>
+                    <div class="small-note" data-i18n="advancedNote"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div>
+          <section class="panel">
+            <div class="panel-head">
+               <section class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="section-label" data-i18n="sequenceSectionLabel"></div>
+                <h3 data-i18n="sequenceTitle"></h3>
+              </div>
+            </div>
+            <div class="cards-strip" id="sequenceStrip"></div>
+          </section>
+              <div>
+                <div class="section-label" data-i18n="summarySectionLabel"></div>
+                <h2 data-i18n="summaryTitle"></h2>
+              </div>
+              <span class="status-pill" id="statusPill"></span>
+            </div>
+            <div class="summary-grid" id="summaryGrid"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="section-label" data-i18n="singleSectionLabel"></div>
+                <h3 data-i18n="singleTitle"></h3>
+              </div>
+            </div>
+            <div class="sequence-box" id="singlePointBox"></div>
+          </section>
+
+
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="section-label" data-i18n="tableSectionLabel"></div>
+            <h2 data-i18n="tableTitle"></h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="result-table">
+            <thead>
+              <tr>
+                <th data-i18n="thStep"></th>
+                <th data-i18n="thNonce"></th>
+                <th data-i18n="thMessage"></th>
+                <th data-i18n="thHmac"></th>
+                <th data-i18n="thX"></th>
+                <th data-i18n="thR"></th>
+                <th data-i18n="thTargetIndex"></th>
+                <th data-i18n="thTargets"></th>
+              </tr>
+            </thead>
+            <tbody id="resultTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="content-grid">
+        <section class="panel">
           <div class="panel-head">
-            <h2 data-i18n="resultTitle"></h2>
-            <span class="status-pill" id="statusPill"></span>
-          </div>
-          <div class="visual-grid" id="visualGrid"></div>
-          <div class="meta-grid" id="metaGrid"></div>
-          <div class="formula-box" id="formulaBox"></div>
-          <div class="steps-block">
-            <div class="steps-head">
-              <h3 data-i18n="stepsTitle"></h3>
-              <span data-i18n="stepsHint"></span>
+            <div>
+              <div class="section-label" data-i18n="formulaSectionLabel"></div>
+              <h3 data-i18n="formulaTitle"></h3>
             </div>
-            <ol class="steps-list" id="stepsList"></ol>
           </div>
-          <button
-            type="button"
-            class="lang-button is-active"
-            id="langToggleButton"
-          ></button>
+          <div class="formula-card">
+            <strong data-i18n="logicTitle"></strong>
+            <ol class="formula-list" id="stepsList"></ol>
+          </div>
+          <div class="formula-card mt-3">
+            <strong data-i18n="formulaCardTitle"></strong>
+            <ol class="formula-list" id="formulaList"></ol>
+          </div>
+          <div class="formula-card mt-3">
+            <strong data-i18n="mappingTitle"></strong>
+            <div id="mappingBlock"></div>
+          </div>
         </section>
+      </section>
+
+      <section class="panel language-panel">
+        <div class="panel-head">
+          <div>
+            <div class="section-label" data-i18n="languageSectionLabel"></div>
+            <h3 data-i18n="languageTitle"></h3>
+          </div>
+        </div>
+        <div class="language-row">
+          <button type="button" class="secondary-button lang-button" id="langEsButton">Español</button>
+          <button type="button" class="secondary-button lang-button" id="langEnButton">English</button>
+        </div>
       </section>
     </main>
     <script src="./script.js"></script>
