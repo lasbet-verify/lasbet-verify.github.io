@@ -202,6 +202,7 @@ code {
 
 .result-panel {
   display: grid;
+  min-width: 0;
   gap: 18px;
 }
 
@@ -272,7 +273,10 @@ code {
 }
 
 .formula-box {
+  min-width: 0;
+  max-width: 100%;
   padding: 16px 18px;
+  overflow: hidden;
 }
 
 .formula-box code {
@@ -280,6 +284,55 @@ code {
   margin-top: 10px;
   line-height: 1.6;
   overflow-wrap: anywhere;
+}
+
+.formula-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  margin-top: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(61, 46, 26, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.formula-table {
+  width: max-content;
+  min-width: 680px;
+  border-collapse: collapse;
+  font-family: "SFMono-Regular", "Menlo", monospace;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.formula-table th,
+.formula-table td {
+  padding: 10px 12px;
+  text-align: center;
+  white-space: nowrap;
+  border-right: 1px solid rgba(61, 46, 26, 0.1);
+  border-bottom: 1px solid rgba(61, 46, 26, 0.1);
+}
+
+.formula-table th {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(61, 46, 26, 0.04);
+}
+
+.formula-table th:last-child,
+.formula-table td:last-child {
+  border-right: 0;
+}
+
+.formula-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .formula-note {

@@ -256,11 +256,60 @@ function renderFormula(lines) {
   label.className = "formula-label";
   label.textContent = t("formulaLabel");
   elements.formulaBox.appendChild(label);
-  lines.forEach((line) => {
+
+  const tableLines = lines.filter((line) => line.startsWith("bucket ") && line.includes("=>"));
+  const formulaLines = lines.filter((line) => !tableLines.includes(line));
+
+  formulaLines.forEach((line) => {
     const code = document.createElement("code");
     code.textContent = line;
     elements.formulaBox.appendChild(code);
   });
+
+  if (tableLines.length) {
+    const scroll = document.createElement("div");
+    scroll.className = "formula-table-scroll";
+
+    const table = document.createElement("table");
+    table.className = "formula-table";
+
+    const headers = ["Bucket", "Result", "Weight", "Probability", "Odds", "RTP"];
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    headers.forEach((header) => {
+      const th = document.createElement("th");
+      th.textContent = header;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    tableLines.forEach((line) => {
+      const [rangeResult, weight, , probability, odds, rtp] = line.split("|").map((part) => part.trim());
+      const [bucketRange, result] = rangeResult.split("=>").map((part) => part.trim());
+      const cells = [
+        bucketRange.replace(/^bucket\s+/i, ""),
+        result,
+        weight.replace(/^weight\s+/i, ""),
+        probability,
+        odds,
+        rtp.replace(/^RTP\s+/i, ""),
+      ];
+      const row = document.createElement("tr");
+      cells.forEach((cell) => {
+        const td = document.createElement("td");
+        td.textContent = cell;
+        row.appendChild(td);
+      });
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+
+    scroll.appendChild(table);
+    elements.formulaBox.appendChild(scroll);
+  }
+
   const paragraph = document.createElement("p");
   paragraph.className = "formula-note";
   paragraph.innerHTML = t("formulaNote");
